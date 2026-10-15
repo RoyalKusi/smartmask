@@ -1245,7 +1245,7 @@ body {
   .sm-show-compact {
     display: inline-flex !important;
   }
-  .sm-env-pill span.long {
+  .sm-env-pill {
     display: none;
   }
   .sm-cmdbar {
@@ -1298,4 +1298,17 @@ body {
 .sm-matrix.fixed td {
   overflow-wrap: anywhere;
   font-size: 12px;
+}
+
+.sm-activity-item {
+  flex-wrap: wrap;
+  white-space: normal;
+}
+.sm-activity-item > span:last-child {
+  white-space: normal !important;
+  margin-left: 0 !important;
+}
+.sm-scroll-x {
+  overflow-x: auto;
+  max-width: 100%;
 }

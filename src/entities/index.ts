@@ -12,7 +12,11 @@ export type { ColumnState, Role, Tag, Family, Dialect, Violation } from '../shar
 
 import type { ColumnState, Role, Tag } from '../shared/engine/types';
 
-export const ROLE_LABEL: Record<Role, string> = { ROLE_ADMIN: 'Admin', ROLE_SUPPORT: 'Support', ROLE_ANALYST: 'Analyst' };
+export const ROLE_LABEL: Record<Role, string> = {
+  ROLE_ADMIN: 'Admin',
+  ROLE_SUPPORT: 'Support',
+  ROLE_ANALYST: 'Analyst',
+};
 
 export const TAG_LABEL: Record<Tag, string> = {
   PII_HIGH: 'PII (high)',

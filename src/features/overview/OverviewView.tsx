@@ -271,7 +271,7 @@ function Body({ d }: { d: OverviewData }) {
           {d.activity.map((a) => (
             <li key={a.id} style={{ borderTop: '1px solid var(--sm-stroke-subtle)' }}>
               <button
-                className="sm-nav-item"
+                className="sm-nav-item sm-activity-item"
                 style={{ height: 'auto', padding: '8px 4px', width: '100%', alignItems: 'flex-start' }}
                 onClick={KIND_VIEW[a.kind]}
               >

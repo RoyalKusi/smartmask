@@ -116,7 +116,10 @@ export function useParam(
 export function useListParam(key: string): [string[], (v: string[], replace?: boolean) => void] {
   const [raw, set] = useParam(key, '');
   const list = useMemo(() => (raw ? raw.split(',').filter(Boolean) : []), [raw]);
-  const setList = useCallback((v: string[], replace = true) => set(v.length ? v.join(',') : null, replace), [set]);
+  const setList = useCallback(
+    (v: string[], replace = true) => set(v.length ? v.join(',') : null, replace),
+    [set],
+  );
   return [list, setList];
 }
 

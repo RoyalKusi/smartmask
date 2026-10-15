@@ -13,7 +13,13 @@ export interface ChaosFlags {
   crashNext: boolean;
 }
 
-let flags: ChaosFlags = { fail500: false, timeout: false, catalogOutage: false, auditFull: false, crashNext: false };
+let flags: ChaosFlags = {
+  fail500: false,
+  timeout: false,
+  catalogOutage: false,
+  auditFull: false,
+  crashNext: false,
+};
 const listeners = new Set<() => void>();
 
 export const getChaos = (): ChaosFlags => flags;

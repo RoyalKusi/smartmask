@@ -251,7 +251,13 @@ export function ChaosDialog() {
             <Button
               appearance="secondary"
               onClick={() => {
-                setChaos({ fail500: false, timeout: false, catalogOutage: false, auditFull: false, crashNext: false });
+                setChaos({
+                  fail500: false,
+                  timeout: false,
+                  catalogOutage: false,
+                  auditFull: false,
+                  crashNext: false,
+                });
                 notify({ title: 'Chaos cleared', intent: 'info' });
               }}
             >

@@ -319,18 +319,20 @@ export default function AnomaliesView() {
         }
       >
         <div className="sm-stack" style={{ gap: 16 }}>
-          <TabList
-            selectedValue={tab}
-            onTabSelect={(_, d) => setTab(String(d.value), true)}
-            aria-label="Alert status"
-          >
-            <Tab value="open">Open ({alerts.filter((a) => a.status === 'open').length})</Tab>
-            <Tab value="acknowledged">
-              Acknowledged ({alerts.filter((a) => a.status === 'acknowledged').length})
-            </Tab>
-            <Tab value="dismissed">Dismissed ({alerts.filter((a) => a.status === 'dismissed').length})</Tab>
-            <Tab value="all">All ({alerts.length})</Tab>
-          </TabList>
+          <div className="sm-scroll-x">
+            <TabList
+              selectedValue={tab}
+              onTabSelect={(_, d) => setTab(String(d.value), true)}
+              aria-label="Alert status"
+            >
+              <Tab value="open">Open ({alerts.filter((a) => a.status === 'open').length})</Tab>
+              <Tab value="acknowledged">
+                Acknowledged ({alerts.filter((a) => a.status === 'acknowledged').length})
+              </Tab>
+              <Tab value="dismissed">Dismissed ({alerts.filter((a) => a.status === 'dismissed').length})</Tab>
+              <Tab value="all">All ({alerts.length})</Tab>
+            </TabList>
+          </div>
           {shown.length === 0 ? (
             <EmptyPanel title={tab === 'open' ? 'All alerts handled' : 'Nothing here'}>
               {tab === 'open'

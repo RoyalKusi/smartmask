@@ -269,7 +269,8 @@ test.describe('SmartMask Console: the flows that must work end to end', () => {
     await page.getByLabel('Catalog outage').check();
     await page.getByRole('button', { name: 'Done' }).click();
     await page.getByRole('link', { name: 'Discovery' }).click();
-    await expect(page.getByText('SM-CAT-001')).toBeVisible({ timeout: 20_000 });
+    await page.getByRole('button', { name: /Scan core_pg/ }).click();
+    await expect(page.getByText(/Scan of core_pg failed · SM-CAT-001/)).toBeVisible({ timeout: 20_000 });
 
     await page.keyboard.press('Control+Shift+E');
     await page.getByLabel('Catalog outage').uncheck();
