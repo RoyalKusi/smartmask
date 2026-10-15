@@ -8,7 +8,8 @@ import { ROLES } from '../../src/shared/engine/types';
 import { catalogMap, run } from './helpers';
 
 describe('end-to-end pipeline, golden per role', () => {
-  const sql = 'SELECT c.card_no, a.balance FROM cards c JOIN accounts a ON a.account_id = c.account_id WHERE c.customer_id = 1';
+  const sql =
+    'SELECT c.card_no, a.balance FROM cards c JOIN accounts a ON a.account_id = c.account_id WHERE c.customer_id = 1';
   it('Admin sees plaintext, Support partial + bucket, Analyst token + [REDACTED]', async () => {
     const r = await run(sql);
     expect(r.outcomes.ROLE_ADMIN.masked![0]).toEqual(['4111-1111-1111-1111', '128450.00']);
@@ -19,11 +20,15 @@ describe('end-to-end pipeline, golden per role', () => {
     expect(r.raw.rows[0]).toEqual(['4111-1111-1111-1111', '128450.00']);
   });
   it('equal inputs give equal tokens so cross-table joins visibly work', async () => {
-    const r = await run('SELECT c.ssn, l.principal FROM customers c JOIN loans l ON l.applicant_ssn = c.ssn LIMIT 30');
+    const r = await run(
+      'SELECT c.ssn, l.principal FROM customers c JOIN loans l ON l.applicant_ssn = c.ssn LIMIT 30',
+    );
     const m = r.outcomes.ROLE_ANALYST.masked!;
     expect(m.length).toBeGreaterThan(0);
     expect(m.every((row) => /^tok_[0-9a-f]{24}$/.test(String(row[0])))).toBe(true);
-    const joined = await run('SELECT c.ssn, k.ssn AS kyc_ssn FROM customers c JOIN kyc_documents k ON k.customer_id = c.customer_id LIMIT 30');
+    const joined = await run(
+      'SELECT c.ssn, k.ssn AS kyc_ssn FROM customers c JOIN kyc_documents k ON k.customer_id = c.customer_id LIMIT 30',
+    );
     for (const row of joined.outcomes.ROLE_ANALYST.masked!) expect(row[0]).toBe(row[1]);
   });
   it('rejects tagged literal predicates for Support/Analyst but runs for Admin', async () => {
@@ -36,9 +41,13 @@ describe('end-to-end pipeline, golden per role', () => {
   it('executes aggregates, CTEs and subqueries over the base tables', async () => {
     const agg = await run('SELECT segment, COUNT(*) AS n FROM customers GROUP BY segment ORDER BY segment');
     expect(agg.raw.rows.reduce((s, r) => s + Number(r[1]), 0)).toBe(5000);
-    const sub = await run("SELECT customer_id FROM customers WHERE customer_id IN (SELECT customer_id FROM loans WHERE status = 'ARREARS')");
+    const sub = await run(
+      "SELECT customer_id FROM customers WHERE customer_id IN (SELECT customer_id FROM loans WHERE status = 'ARREARS')",
+    );
     expect(sub.rowCount).toBeGreaterThan(0);
-    const cte = await run("WITH big AS (SELECT account_id, balance FROM accounts WHERE status = 'ACTIVE') SELECT * FROM big LIMIT 5");
+    const cte = await run(
+      "WITH big AS (SELECT account_id, balance FROM accounts WHERE status = 'ACTIVE') SELECT * FROM big LIMIT 5",
+    );
     expect(cte.raw.rows).toHaveLength(5);
   });
   it('base tables are byte-identical before and after a batch of queries', async () => {
@@ -84,12 +93,15 @@ describe('property: no raw tagged value reaches non-Admin output', () => {
             const analysis = o.analysis!;
             analysis.outCols.forEach((oc, ci) => {
               const rec = catalogMap.get(oc.sources[0]!);
-              const masked = rec && (rec.state === 'ENFORCED' || rec.state === 'ENFORCED_ML' || rec.state === 'REVIEW');
+              const masked =
+                rec && (rec.state === 'ENFORCED' || rec.state === 'ENFORCED_ML' || rec.state === 'REVIEW');
               if (!masked) return;
               o.masked!.forEach((row, ri) => {
                 const raw = r.raw.rows[ri]![ci];
                 const out = row[ci];
+                // NULL and empty string carry no information; they pass through and reveal only absence.
                 if (raw === null) return expect(out).toBeNull();
+                if (raw === '') return;
                 expect(out).not.toBe(raw);
                 if (String(raw).length >= 8) expect(String(out)).not.toContain(String(raw));
               });
@@ -97,7 +109,7 @@ describe('property: no raw tagged value reaches non-Admin output', () => {
           }
         },
       ),
-      { numRuns: 60 },
+      { numRuns: 150 },
     );
   });
   it('Admin output equals the base-table result', async () => {

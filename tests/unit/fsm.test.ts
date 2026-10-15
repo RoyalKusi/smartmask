@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { LOAD_TRANSITIONS, QUERY_TRANSITIONS, SCAN_TRANSITIONS, transition } from '../../src/shared/engine/fsm';
+import {
+  LOAD_TRANSITIONS,
+  QUERY_TRANSITIONS,
+  SCAN_TRANSITIONS,
+  transition,
+} from '../../src/shared/engine/fsm';
 
 describe('explicit state machines', () => {
   it('load: idle → loading → success | empty | error, with retrying', () => {

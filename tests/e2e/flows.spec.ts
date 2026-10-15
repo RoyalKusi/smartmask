@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { open, setRole, toast, trackConsole, waitForData } from './helpers';
 
 test.describe('SmartMask Console: the flows that must work end to end', () => {
@@ -28,24 +28,37 @@ test.describe('SmartMask Console: the flows that must work end to end', () => {
     expect(errors).toEqual([]);
   });
 
-  test('run query: stage strip, SM-PRED-001 and SM-DERIVED-001 rejections, SM-PARSE-001', async ({ page }) => {
+  test('run query: stage strip, SM-PRED-001 and SM-DERIVED-001 rejections, SM-PARSE-001', async ({
+    page,
+  }) => {
     await open(page, 'workbench', 'role=support&sample=probe');
     await page.getByTestId('run-query').click();
     await expect(page.getByRole('alert').filter({ hasText: 'SM-PRED-001' })).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByRole('list', { name: 'Pipeline' }).getByRole('listitem').nth(1)).toHaveAttribute('data-state', 'fail');
+    await expect(page.getByRole('list', { name: 'Pipeline' }).getByRole('listitem').nth(1)).toHaveAttribute(
+      'data-state',
+      'fail',
+    );
 
     await open(page, 'workbench', 'role=analyst&sample=derived');
     await page.getByTestId('run-query').click();
-    await expect(page.getByRole('alert').filter({ hasText: 'SM-DERIVED-001' })).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByRole('alert').filter({ hasText: 'SM-DERIVED-001' })).toBeVisible({
+      timeout: 20_000,
+    });
 
     await open(page, 'workbench', 'role=admin&sample=parse');
     await page.getByTestId('run-query').click();
-    await expect(page.getByRole('alert').filter({ hasText: 'SM-PARSE-001' }).first()).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByRole('alert').filter({ hasText: 'SM-PARSE-001' }).first()).toBeVisible({
+      timeout: 20_000,
+    });
 
     // Admin may run the literal predicate.
     await open(page, 'workbench', 'role=admin&sample=probe');
     await page.getByTestId('run-query').click();
-    await expect(page.getByRole('list', { name: 'Pipeline' }).getByRole('listitem').nth(5)).toHaveAttribute('data-state', 'done', { timeout: 20_000 });
+    await expect(page.getByRole('list', { name: 'Pipeline' }).getByRole('listitem').nth(5)).toHaveAttribute(
+      'data-state',
+      'done',
+      { timeout: 20_000 },
+    );
   });
 
   test('joins on tokens work: equal inputs give equal tokens', async ({ page }) => {
@@ -61,7 +74,9 @@ test.describe('SmartMask Console: the flows that must work end to end', () => {
     expect(toks[0]).toBe(toks[1]);
   });
 
-  test('scan populates the table progressively and the review decision updates the catalog and Overview', async ({ page }) => {
+  test('scan populates the table progressively and the review decision updates the catalog and Overview', async ({
+    page,
+  }) => {
     await open(page, 'discovery', 'conn=ledger_lite');
     await waitForData(page);
     await page.getByRole('button', { name: /Scan ledger_lite/ }).click();
@@ -75,7 +90,11 @@ test.describe('SmartMask Console: the flows that must work end to end', () => {
     await expect(page.getByRole('article').first()).toBeVisible();
     const before = await page.getByRole('article').count();
     expect(before).toBeGreaterThan(5);
-    await page.getByRole('article').filter({ hasText: 'legacy_cards.c1' }).getByRole('button', { name: 'Approve' }).click();
+    await page
+      .getByRole('article')
+      .filter({ hasText: 'legacy_cards.c1' })
+      .getByRole('button', { name: 'Approve' })
+      .click();
     await expect(toast(page, 'Approved legacy_cards.c1')).toBeVisible();
     await expect(page.getByRole('article')).toHaveCount(before - 1);
 
@@ -103,7 +122,9 @@ test.describe('SmartMask Console: the flows that must work end to end', () => {
     await expect(toast(page, 'Cleared settlements.order_ref')).toBeVisible();
   });
 
-  test('policy edit: invalid YAML disables Save and flags the line; a valid edit updates the matrix and bumps the version', async ({ page }) => {
+  test('policy edit: invalid YAML disables Save and flags the line; a valid edit updates the matrix and bumps the version', async ({
+    page,
+  }) => {
     await open(page, 'policy');
     await expect(page.getByText('policy_version 7')).toBeVisible();
     const editor = page.getByRole('textbox', { name: 'Policy YAML editor' });
@@ -121,7 +142,9 @@ test.describe('SmartMask Console: the flows that must work end to end', () => {
     // Semantic error: single-line YAML flow mapping with an unknown role.
     await editor.click();
     await page.keyboard.press('Control+A');
-    await page.keyboard.type('{"policy_version": 7, "fail_mode": "closed", "rules": [{"role": "ROLE_BOGUS", "tag": "PII_HIGH", "function": "REDACT"}]}');
+    await page.keyboard.type(
+      '{"policy_version": 7, "fail_mode": "closed", "rules": [{"role": "ROLE_BOGUS", "tag": "PII_HIGH", "function": "REDACT"}]}',
+    );
     await expect(issues).toContainText('SM-POL-002');
     await expect(page.getByRole('button', { name: /Save as v8/ })).toBeDisabled();
     await page.getByRole('button', { name: 'Revert' }).click();
@@ -154,7 +177,9 @@ test.describe('SmartMask Console: the flows that must work end to end', () => {
     await expect(page.getByText('plan cache miss')).toBeVisible({ timeout: 20_000 });
   });
 
-  test('tamper test: corrupting an event breaks the chain and Verify Chain pinpoints it', async ({ page }) => {
+  test('tamper test: corrupting an event breaks the chain and Verify Chain pinpoints it', async ({
+    page,
+  }) => {
     await open(page, 'audit');
     await waitForData(page);
     await expect(page.getByText('Chain verified').first()).toBeVisible();
@@ -175,7 +200,9 @@ test.describe('SmartMask Console: the flows that must work end to end', () => {
     await waitForData(page);
     await expect(page.getByText('Raw data unchanged')).toBeVisible();
     await page.getByRole('button', { name: 'Run verification batch' }).click();
-    await expect(page.locator('.fui-ToastTitle', { hasText: 'Verification passed' })).toBeVisible({ timeout: 60_000 });
+    await expect(page.locator('.fui-ToastTitle', { hasText: 'Verification passed' })).toBeVisible({
+      timeout: 60_000,
+    });
     await expect(page.getByText('Raw data unchanged')).toBeVisible();
   });
 
@@ -233,16 +260,49 @@ test.describe('SmartMask Console: the flows that must work end to end', () => {
     await expect(page.getByText('policy_version 7')).toBeVisible({ timeout: 20_000 });
   });
 
+  test('chaos: catalog outage and timeouts produce their own error codes; audit queue full refuses queries', async ({
+    page,
+  }) => {
+    await open(page, 'overview');
+    await waitForData(page);
+    await page.keyboard.press('Control+Shift+E');
+    await page.getByLabel('Catalog outage').check();
+    await page.getByRole('button', { name: 'Done' }).click();
+    await page.getByRole('link', { name: 'Discovery' }).click();
+    await expect(page.getByText('SM-CAT-001')).toBeVisible({ timeout: 20_000 });
+
+    await page.keyboard.press('Control+Shift+E');
+    await page.getByLabel('Catalog outage').uncheck();
+    await page.getByLabel('Inject timeouts').check();
+    await page.getByRole('button', { name: 'Done' }).click();
+    await page.getByRole('link', { name: 'Audit Trail' }).click();
+    await expect(page.getByText('SM-API-408')).toBeVisible({ timeout: 20_000 });
+
+    await page.keyboard.press('Control+Shift+E');
+    await page.getByLabel('Inject timeouts').uncheck();
+    await page.getByLabel('Audit queue full').check();
+    await page.getByRole('button', { name: 'Done' }).click();
+    await page.getByRole('link', { name: 'Query Workbench' }).click();
+    await page.getByTestId('run-query').click();
+    await expect(page.getByRole('alert').filter({ hasText: 'SM-AUDIT-001' })).toBeVisible({
+      timeout: 20_000,
+    });
+  });
+
   test('schema drift: rename triggers a rescan and the new column is reviewed', async ({ page }) => {
     await open(page, 'discovery');
     await waitForData(page);
     await page.getByRole('button', { name: 'Simulate schema drift' }).click();
     await expect(page.getByText('Schema drift reconciled')).toBeVisible({ timeout: 30_000 });
     await open(page, 'review');
-    await expect(page.getByRole('article').filter({ hasText: 'contacts.handset' })).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByRole('article').filter({ hasText: 'contacts.handset' })).toBeVisible({
+      timeout: 20_000,
+    });
   });
 
-  test('anomalies: three injected anomalies, acknowledge with undo, dismiss with confirmation', async ({ page }) => {
+  test('anomalies: three injected anomalies, acknowledge with undo, dismiss with confirmation', async ({
+    page,
+  }) => {
     await open(page, 'anomalies');
     await waitForData(page);
     const grid = page.getByRole('grid', { name: 'Anomaly alerts' });

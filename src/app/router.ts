@@ -1,7 +1,26 @@
-import { useCallback, useSyncExternalStore } from 'react';
+import { useCallback, useMemo, useSyncExternalStore } from 'react';
 
-export type ViewId = 'overview' | 'discovery' | 'review' | 'policy' | 'workbench' | 'verification' | 'audit' | 'performance' | 'anomalies';
-export const VIEW_IDS: readonly ViewId[] = ['overview', 'discovery', 'review', 'policy', 'workbench', 'verification', 'audit', 'performance', 'anomalies'];
+export type ViewId =
+  | 'overview'
+  | 'discovery'
+  | 'review'
+  | 'policy'
+  | 'workbench'
+  | 'verification'
+  | 'audit'
+  | 'performance'
+  | 'anomalies';
+export const VIEW_IDS: readonly ViewId[] = [
+  'overview',
+  'discovery',
+  'review',
+  'policy',
+  'workbench',
+  'verification',
+  'audit',
+  'performance',
+  'anomalies',
+];
 
 /** Params that follow the user across views. Everything else is view-specific and is dropped on navigation. */
 const GLOBAL_PARAMS = ['role', 'theme', 'fast'];
@@ -81,7 +100,10 @@ export function useRoute(): Route {
 }
 
 /** A single URL-backed string parameter. Filters, sorts and tabs use this so they survive refresh and Back/Forward. */
-export function useParam(key: string, fallback = ''): [string, (v: string | null, replace?: boolean) => void] {
+export function useParam(
+  key: string,
+  fallback = '',
+): [string, (v: string | null, replace?: boolean) => void] {
   const { params } = useRoute();
   const value = params.get(key) ?? fallback;
   const set = useCallback(
@@ -93,8 +115,9 @@ export function useParam(key: string, fallback = ''): [string, (v: string | null
 
 export function useListParam(key: string): [string[], (v: string[], replace?: boolean) => void] {
   const [raw, set] = useParam(key, '');
-  const list = raw ? raw.split(',').filter(Boolean) : [];
-  return [list, (v, replace = true) => set(v.length ? v.join(',') : null, replace)];
+  const list = useMemo(() => (raw ? raw.split(',').filter(Boolean) : []), [raw]);
+  const setList = useCallback((v: string[], replace = true) => set(v.length ? v.join(',') : null, replace), [set]);
+  return [list, setList];
 }
 
 export type RoleParam = 'admin' | 'support' | 'analyst';

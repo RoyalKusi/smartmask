@@ -1,4 +1,12 @@
-import { EngineError, type ColumnState, type Dialect, type Family, type Role, type Tag, type Violation } from '../types';
+import {
+  EngineError,
+  type ColumnState,
+  type Dialect,
+  type Family,
+  type Role,
+  type Tag,
+  type Violation,
+} from '../types';
 import { resolveMask, type Policy } from '../policyCore';
 import type { MaskArgs, MaskFn } from '../masking';
 import type { Expr, Join, Query, QueryBody, Select, SelectItem, TableRef } from './ast';
@@ -71,7 +79,9 @@ interface Lineage {
 const eq = (a: string, b: string): boolean => a.toLowerCase() === b.toLowerCase();
 
 function lit(v: string | number): Expr {
-  return typeof v === 'number' ? { k: 'lit', v, raw: String(v) } : { k: 'lit', v, raw: `'${v.replace(/'/g, "''")}'` };
+  return typeof v === 'number'
+    ? { k: 'lit', v, raw: String(v) }
+    : { k: 'lit', v, raw: `'${v.replace(/'/g, "''")}'` };
 }
 
 export function maskFnName(fn: Exclude<MaskFn, 'PLAINTEXT' | 'REDACT'>, dialect: Dialect): string {
@@ -79,20 +89,18 @@ export function maskFnName(fn: Exclude<MaskFn, 'PLAINTEXT' | 'REDACT'>, dialect:
   return dialect === 'mysql' ? `SM_${fn}` : dialect === 'sqlite' ? `sm_${base}` : `smartmask.${base}`;
 }
 
-export function maskExpr(
-  fn: MaskFn,
-  args: MaskArgs,
-  inner: Expr,
-  dialect: Dialect,
-  tag: Tag,
-): Expr {
+export function maskExpr(fn: MaskFn, args: MaskArgs, inner: Expr, dialect: Dialect, tag: Tag): Expr {
   switch (fn) {
     case 'PLAINTEXT':
       return inner;
     case 'REDACT':
       return lit('[REDACTED]');
     case 'PARTIAL_KEEP':
-      return { k: 'fn', name: maskFnName(fn, dialect), args: [inner, lit(args.keep_first ?? 0), lit(args.keep_last ?? 0)] };
+      return {
+        k: 'fn',
+        name: maskFnName(fn, dialect),
+        args: [inner, lit(args.keep_first ?? 0), lit(args.keep_last ?? 0)],
+      };
     case 'PARTIAL_EMAIL':
       return { k: 'fn', name: maskFnName(fn, dialect), args: [inner] };
     case 'BUCKET':
@@ -107,7 +115,12 @@ function lookupCte(scope: Map<string, OutCol[]>, name: string): OutCol[] | undef
   return undefined;
 }
 
-function processQuery(q: Query, ctx: Ctx, outer: Map<string, OutCol[]>, top: boolean): { cols: OutCol[]; q: Query } {
+function processQuery(
+  q: Query,
+  ctx: Ctx,
+  outer: Map<string, OutCol[]>,
+  top: boolean,
+): { cols: OutCol[]; q: Query } {
   const scope = new Map(outer);
   const ctes: Query['ctes'] = [];
   for (const c of q.ctes) {
@@ -120,7 +133,12 @@ function processQuery(q: Query, ctx: Ctx, outer: Map<string, OutCol[]>, top: boo
   return { cols: body.cols, q: { ctes, body: body.body } };
 }
 
-function processBody(b: QueryBody, ctx: Ctx, scope: Map<string, OutCol[]>, top: boolean): { cols: OutCol[]; body: QueryBody } {
+function processBody(
+  b: QueryBody,
+  ctx: Ctx,
+  scope: Map<string, OutCol[]>,
+  top: boolean,
+): { cols: OutCol[]; body: QueryBody } {
   if (b.k === 'select') {
     const r = processSelect(b, ctx, scope, top);
     return { cols: r.cols, body: r.sel };
@@ -132,12 +150,21 @@ function processBody(b: QueryBody, ctx: Ctx, scope: Map<string, OutCol[]>, top: 
   }
   const cols = l.cols.map((c, i) => {
     const rc = r.cols[i] as OutCol;
-    return { ...c, sources: [...new Set([...c.sources, ...rc.sources])], direct: c.direct && rc.direct && c.sources.join() === rc.sources.join() };
+    return {
+      ...c,
+      sources: [...new Set([...c.sources, ...rc.sources])],
+      direct: c.direct && rc.direct && c.sources.join() === rc.sources.join(),
+    };
   });
   return { cols, body: { k: 'union', all: b.all, l: l.body, r: r.body } };
 }
 
-function processSelect(sel: Select, ctx: Ctx, scope: Map<string, OutCol[]>, top: boolean): { cols: OutCol[]; sel: Select } {
+function processSelect(
+  sel: Select,
+  ctx: Ctx,
+  scope: Map<string, OutCol[]>,
+  top: boolean,
+): { cols: OutCol[]; sel: Select } {
   const { env } = ctx;
   const secure = env.role !== 'ROLE_ADMIN';
   const sources: Source[] = [];
@@ -188,7 +215,11 @@ function processSelect(sel: Select, ctx: Ctx, scope: Map<string, OutCol[]>, top:
     }
     if (hits.length > 1 && !e.table) {
       const distinct = new Set(hits.map((h) => h.sources.join()));
-      if (distinct.size > 1) throw new EngineError('SM-PARSE-001', `Column "${e.name}" is ambiguous; qualify it with a table alias.`);
+      if (distinct.size > 1)
+        throw new EngineError(
+          'SM-PARSE-001',
+          `Column "${e.name}" is ambiguous; qualify it with a table alias.`,
+        );
     }
     const hit = hits[0];
     if (hit) return hit;
@@ -218,7 +249,10 @@ function processSelect(sel: Select, ctx: Ctx, scope: Map<string, OutCol[]>, top:
         return { sources: r.cols.flatMap((c) => c.sources), direct: false, hasCol: true };
       }
       default:
-        return mergeLineage(children(e).map((c) => lineageOf(c, allowAlias)), e);
+        return mergeLineage(
+          children(e).map((c) => lineageOf(c, allowAlias)),
+          e,
+        );
     }
   }
 
@@ -325,8 +359,14 @@ function processSelect(sel: Select, ctx: Ctx, scope: Map<string, OutCol[]>, top:
     else if (j.on) lineageOf(j.on, false);
     return j;
   });
-  if (sel.where) secure ? checkPredicate(sel.where) : lineageOf(sel.where, false);
-  if (sel.having) secure ? checkPredicate(sel.having) : lineageOf(sel.having, true);
+  if (sel.where) {
+    if (secure) checkPredicate(sel.where);
+    else lineageOf(sel.where, false);
+  }
+  if (sel.having) {
+    if (secure) checkPredicate(sel.having);
+    else lineageOf(sel.having, true);
+  }
   sel.groupBy.forEach((g) => lineageOf(g, true));
   sel.orderBy.forEach((o) => lineageOf(o.e, true));
 
@@ -337,8 +377,11 @@ function processSelect(sel: Select, ctx: Ctx, scope: Map<string, OutCol[]>, top:
   const pushItem = (item: SelectItem): void => {
     if (item.expr.k === 'star') {
       const star = item.expr;
-      const relevant = sources.filter((s) => !star.table || eq(s.alias, star.table) || (s.table && eq(s.table, star.table)));
-      if (star.table && !relevant.length) throw new EngineError('SM-CAT-002', `Unknown table or alias "${star.table}".`);
+      const relevant = sources.filter(
+        (s) => !star.table || eq(s.alias, star.table) || (s.table && eq(s.table, star.table)),
+      );
+      if (star.table && !relevant.length)
+        throw new EngineError('SM-CAT-002', `Unknown table or alias "${star.table}".`);
       for (const s of relevant) {
         for (const c of s.cols) {
           c.sources.forEach((x) => ctx.referenced.add(x));
@@ -349,8 +392,18 @@ function processSelect(sel: Select, ctx: Ctx, scope: Map<string, OutCol[]>, top:
       return;
     }
     const l = lineageOf(item.expr, false);
-    const name = item.alias ?? (item.expr.k === 'col' ? item.expr.name : item.expr.k === 'fn' ? item.expr.name.toLowerCase() : `col${outs.length + 1}`);
-    outs.push({ item, col: { name, sources: l.sources, direct: l.direct && item.expr.k === 'col' }, expr: item.expr });
+    const name =
+      item.alias ??
+      (item.expr.k === 'col'
+        ? item.expr.name
+        : item.expr.k === 'fn'
+          ? item.expr.name.toLowerCase()
+          : `col${outs.length + 1}`);
+    outs.push({
+      item,
+      col: { name, sources: l.sources, direct: l.direct && item.expr.k === 'col' },
+      expr: item.expr,
+    });
   };
   sel.items.forEach(pushItem);
 
@@ -365,7 +418,12 @@ function processSelect(sel: Select, ctx: Ctx, scope: Map<string, OutCol[]>, top:
           const info = tagged(id) as TagInfo;
           const r = resolveMask(env.policy, env.role, info.tag, info.family);
           if (r.fn !== 'PLAINTEXT') {
-            col.mask = { fn: r.fn, args: r.args, tag: info.tag, ...(info.family ? { family: info.family } : {}) };
+            col.mask = {
+              fn: r.fn,
+              args: r.args,
+              tag: info.tag,
+              ...(info.family ? { family: info.family } : {}),
+            };
             ctx.masks.push({ column: id, fn: r.fn, tag: info.tag });
             if (env.approach === 'ast') expr = maskExpr(r.fn, r.args, expr, env.dialect, info.tag);
           }
@@ -374,8 +432,13 @@ function processSelect(sel: Select, ctx: Ctx, scope: Map<string, OutCol[]>, top:
         }
       }
     }
-    const needsAlias = expr !== o.expr || (o.item.alias === undefined && expand && col.name !== (expr.k === 'col' ? expr.name : ''));
-    items.push({ expr, ...(o.item.alias ? { alias: o.item.alias } : needsAlias || expr.k !== 'col' ? { alias: col.name } : {}) });
+    const needsAlias =
+      expr !== o.expr ||
+      (o.item.alias === undefined && expand && col.name !== (expr.k === 'col' ? expr.name : ''));
+    items.push({
+      expr,
+      ...(o.item.alias ? { alias: o.item.alias } : needsAlias || expr.k !== 'col' ? { alias: col.name } : {}),
+    });
   }
 
   const hasStar = sel.items.some((i) => i.expr.k === 'star');
@@ -396,7 +459,11 @@ function children(e: Expr): Expr[] {
     case 'isnull':
       return [e.e];
     case 'case':
-      return [...(e.operand ? [e.operand] : []), ...e.whens.flatMap((w) => [w.c, w.t]), ...(e.else ? [e.else] : [])];
+      return [
+        ...(e.operand ? [e.operand] : []),
+        ...e.whens.flatMap((w) => [w.c, w.t]),
+        ...(e.else ? [e.else] : []),
+      ];
     case 'in':
       return [e.e, ...(e.list ?? [])];
     case 'between':
@@ -429,7 +496,12 @@ export function secureViewDdl(env: AnalyzeEnv, table: string): string {
     const r = resolveMask(env.policy, env.role, info.tag, info.family);
     if (r.fn === 'PLAINTEXT') return `  ${c}`;
     const e = maskExpr(r.fn, r.args, { k: 'col', name: c }, 'postgresql', info.tag);
-    const txt = e.k === 'lit' ? e.raw : e.k === 'fn' ? `${e.name}(${e.args.map((a) => (a.k === 'col' ? a.name : a.k === 'lit' ? a.raw : '')).join(', ')})` : c;
+    const txt =
+      e.k === 'lit'
+        ? e.raw
+        : e.k === 'fn'
+          ? `${e.name}(${e.args.map((a) => (a.k === 'col' ? a.name : a.k === 'lit' ? a.raw : '')).join(', ')})`
+          : c;
     return `  ${txt} AS ${c}`;
   });
   return `CREATE OR REPLACE VIEW ${roleSchema(env.role)}.${def.name} AS\nSELECT\n${cols.join(',\n')}\nFROM public.${def.name};`;

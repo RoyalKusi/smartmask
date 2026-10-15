@@ -1,9 +1,24 @@
 import { Button } from '@fluentui/react-components';
 import { ArrowDownload24Regular } from '@fluentui/react-icons';
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
+import { useLatest } from './useLatest';
 import { useUi, type ExportPayload } from '../../app/store';
 
-export function ViewFrame({ title, subtitle, icon, commands, children, exportable = true }: { title: string; subtitle?: ReactNode; icon: ReactNode; commands?: ReactNode; children: ReactNode; exportable?: boolean }) {
+export function ViewFrame({
+  title,
+  subtitle,
+  icon,
+  commands,
+  children,
+  exportable = true,
+}: {
+  title: string;
+  subtitle?: ReactNode;
+  icon: ReactNode;
+  commands?: ReactNode;
+  children: ReactNode;
+  exportable?: boolean;
+}) {
   const setExportOpen = useUi((s) => s.setExportOpen);
   return (
     <section className="sm-page" aria-labelledby="view-title">
@@ -18,7 +33,11 @@ export function ViewFrame({ title, subtitle, icon, commands, children, exportabl
             {icon}
             {title}
           </h1>
-          {subtitle && <div className="t-secondary" style={{ marginTop: 2 }}>{subtitle}</div>}
+          {subtitle && (
+            <div className="t-secondary" style={{ marginTop: 2 }}>
+              {subtitle}
+            </div>
+          )}
         </div>
         <div className="sm-pagecmds" role="toolbar" aria-label={`${title} commands`}>
           {commands}
@@ -37,10 +56,9 @@ export function ViewFrame({ title, subtitle, icon, commands, children, exportabl
 /** Register what "Export report" produces for the current view. */
 export function useExportProvider(build: () => ExportPayload): void {
   const set = useUi((s) => s.setExportProvider);
-  const ref = useRef(build);
-  ref.current = build;
+  const ref = useLatest(build);
   useEffect(() => {
     set(() => ref.current());
     return () => set(null);
-  }, [set]);
+  }, [set, ref]);
 }

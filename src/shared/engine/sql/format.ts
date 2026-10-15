@@ -17,7 +17,9 @@ export function formatExpr(e: Expr, o: FormatOptions): string {
   const f = (x: Expr): string => formatExpr(x, o);
   switch (e.k) {
     case 'col':
-      return e.table ? `${quoteId(e.table, o.dialect)}.${quoteId(e.name, o.dialect)}` : quoteId(e.name, o.dialect);
+      return e.table
+        ? `${quoteId(e.table, o.dialect)}.${quoteId(e.name, o.dialect)}`
+        : quoteId(e.name, o.dialect);
     case 'lit':
       return o.stripLiterals && e.v !== null && typeof e.v !== 'boolean' ? '?' : e.raw;
     case 'star':
@@ -25,7 +27,8 @@ export function formatExpr(e: Expr, o: FormatOptions): string {
     case 'fn':
       return `${e.name}(${e.distinct ? 'DISTINCT ' : ''}${e.args.map(f).join(', ')})`;
     case 'bin': {
-      const wrap = (x: Expr): string => (x.k === 'bin' && precedence(x.op) < precedence(e.op) ? `(${f(x)})` : f(x));
+      const wrap = (x: Expr): string =>
+        x.k === 'bin' && precedence(x.op) < precedence(e.op) ? `(${f(x)})` : f(x);
       return `${wrap(e.l)} ${e.op} ${wrap(e.r)}`;
     }
     case 'un':
@@ -57,7 +60,8 @@ function precedence(op: string): number {
 
 function formatRef(r: TableRef, o: FormatOptions, depth: number): string {
   const pad = '  '.repeat(depth);
-  if (r.k === 'derived') return `(\n${formatQuery(r.q, o, depth + 1)}\n${pad}) AS ${quoteId(r.alias, o.dialect)}`;
+  if (r.k === 'derived')
+    return `(\n${formatQuery(r.q, o, depth + 1)}\n${pad}) AS ${quoteId(r.alias, o.dialect)}`;
   const nm = `${r.schema ? `${quoteId(r.schema, o.dialect)}.` : ''}${quoteId(r.name, o.dialect)}`;
   return r.alias ? `${nm} AS ${quoteId(r.alias, o.dialect)}` : nm;
 }
@@ -65,16 +69,23 @@ function formatRef(r: TableRef, o: FormatOptions, depth: number): string {
 function formatSelect(s: Select, o: FormatOptions, depth: number): string {
   const pad = '  '.repeat(depth);
   const lines: string[] = [];
-  const items = s.items.map((it) => `${formatExpr(it.expr, o)}${it.alias ? ` AS ${quoteId(it.alias, o.dialect)}` : ''}`);
+  const items = s.items.map(
+    (it) => `${formatExpr(it.expr, o)}${it.alias ? ` AS ${quoteId(it.alias, o.dialect)}` : ''}`,
+  );
   lines.push(`${pad}SELECT ${s.distinct ? 'DISTINCT ' : ''}${items.join(`,\n${pad}       `)}`);
   if (s.from) lines.push(`${pad}FROM ${formatRef(s.from, o, depth)}`);
   for (const j of s.joins) {
-    lines.push(`${pad}${j.type === 'CROSS' ? 'CROSS' : j.type} JOIN ${formatRef(j.src, o, depth)}${j.on ? ` ON ${formatExpr(j.on, o)}` : ''}`);
+    lines.push(
+      `${pad}${j.type === 'CROSS' ? 'CROSS' : j.type} JOIN ${formatRef(j.src, o, depth)}${j.on ? ` ON ${formatExpr(j.on, o)}` : ''}`,
+    );
   }
   if (s.where) lines.push(`${pad}WHERE ${formatExpr(s.where, o)}`);
   if (s.groupBy.length) lines.push(`${pad}GROUP BY ${s.groupBy.map((x) => formatExpr(x, o)).join(', ')}`);
   if (s.having) lines.push(`${pad}HAVING ${formatExpr(s.having, o)}`);
-  if (s.orderBy.length) lines.push(`${pad}ORDER BY ${s.orderBy.map((x) => formatExpr(x.e, o) + (x.desc ? ' DESC' : '')).join(', ')}`);
+  if (s.orderBy.length)
+    lines.push(
+      `${pad}ORDER BY ${s.orderBy.map((x) => formatExpr(x.e, o) + (x.desc ? ' DESC' : '')).join(', ')}`,
+    );
   if (s.limit !== undefined) lines.push(`${pad}LIMIT ${s.limit}${s.offset ? ` OFFSET ${s.offset}` : ''}`);
   else if (s.offset) lines.push(`${pad}OFFSET ${s.offset}`);
   return lines.join('\n');
@@ -91,7 +102,10 @@ export function formatQuery(q: Query, o: FormatOptions, depth = 0, inline = fals
   let out = '';
   if (q.ctes.length) {
     out += `${pad}WITH ${q.ctes
-      .map((c) => `${quoteId(c.name, o.dialect)}${c.cols ? `(${c.cols.map((x) => quoteId(x, o.dialect)).join(', ')})` : ''} AS (\n${formatQuery(c.q, o, depth + 1)}\n${pad})`)
+      .map(
+        (c) =>
+          `${quoteId(c.name, o.dialect)}${c.cols ? `(${c.cols.map((x) => quoteId(x, o.dialect)).join(', ')})` : ''} AS (\n${formatQuery(c.q, o, depth + 1)}\n${pad})`,
+      )
       .join(`,\n${pad}     `)}\n`;
   }
   out += formatBody(q.body, o, depth);

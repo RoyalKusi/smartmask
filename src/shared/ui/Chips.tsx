@@ -1,11 +1,32 @@
 import {
-  CheckmarkCircle16Filled, Eye16Regular, EyeOff16Regular, Flash16Regular, Info16Regular, LockClosed16Regular, ShieldError16Regular,
-  Warning16Regular, Sparkle16Regular, Person16Regular, Dismiss16Regular, Edit16Regular, ArrowSync16Regular,
+  CheckmarkCircle16Filled,
+  Eye16Regular,
+  EyeOff16Regular,
+  Flash16Regular,
+  Info16Regular,
+  LockClosed16Regular,
+  ShieldError16Regular,
+  Warning16Regular,
+  Sparkle16Regular,
+  Person16Regular,
+  Dismiss16Regular,
+  Edit16Regular,
+  ArrowSync16Regular,
 } from '@fluentui/react-icons';
 import type { ReactNode } from 'react';
 import type { ColumnState, Role, Tag } from '../engine/types';
 
-export function Chip({ tone, icon, children, title }: { tone: string; icon?: ReactNode; children: ReactNode; title?: string }) {
+export function Chip({
+  tone,
+  icon,
+  children,
+  title,
+}: {
+  tone: string;
+  icon?: ReactNode;
+  children: ReactNode;
+  title?: string;
+}) {
   return (
     <span className="sm-chip" data-tone={tone} title={title}>
       {icon}
@@ -50,7 +71,10 @@ export function StateChip({ state }: { state: ColumnState }) {
 export function RoleChip({ role }: { role: Role }) {
   const label = role.replace('ROLE_', '');
   return (
-    <Chip tone={role === 'ROLE_ADMIN' ? 'fin' : role === 'ROLE_SUPPORT' ? 'brand' : 'ok'} icon={<Person16Regular aria-hidden />}>
+    <Chip
+      tone={role === 'ROLE_ADMIN' ? 'fin' : role === 'ROLE_SUPPORT' ? 'brand' : 'ok'}
+      icon={<Person16Regular aria-hidden />}
+    >
       {label}
     </Chip>
   );

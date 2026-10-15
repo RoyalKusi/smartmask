@@ -66,13 +66,48 @@ export interface PolicyVersionLog {
 }
 
 export const POLICY_HISTORY: PolicyVersionLog[] = [
-  { version: 1, at: '2026-04-02 09:12:00', author: 'n.sibanda', reason: 'Initial policy: Admin plaintext, Support partial, Analyst redacted.' },
-  { version: 2, at: '2026-05-19 14:40:00', author: 'o.taylor', reason: 'Added BUCKET (width 50,000) for Support on FINANCIAL_CONFIDENTIAL.' },
-  { version: 3, at: '2026-06-30 11:05:00', author: 'o.taylor', reason: 'Analyst PII_HIGH moved from REDACT to HMAC_TOKEN so joins keep working.' },
-  { version: 4, at: '2026-08-11 16:22:00', author: 'n.sibanda', reason: 'Email-specific rule: PARTIAL_EMAIL for Support.' },
-  { version: 5, at: '2026-09-04 10:31:00', author: 'a.mehta', reason: 'Tightened Analyst PII_MEDIUM to REDACT after privacy review.' },
-  { version: 6, at: '2026-10-02 08:50:00', author: 'o.taylor', reason: 'Fail-closed default made explicit (fail_mode: closed).' },
-  { version: 7, at: '2026-10-09 13:15:00', author: 'n.sibanda', reason: 'Support FINANCIAL_CONFIDENTIAL bucket width confirmed at 50,000.' },
+  {
+    version: 1,
+    at: '2026-04-02 09:12:00',
+    author: 'n.sibanda',
+    reason: 'Initial policy: Admin plaintext, Support partial, Analyst redacted.',
+  },
+  {
+    version: 2,
+    at: '2026-05-19 14:40:00',
+    author: 'o.taylor',
+    reason: 'Added BUCKET (width 50,000) for Support on FINANCIAL_CONFIDENTIAL.',
+  },
+  {
+    version: 3,
+    at: '2026-06-30 11:05:00',
+    author: 'o.taylor',
+    reason: 'Analyst PII_HIGH moved from REDACT to HMAC_TOKEN so joins keep working.',
+  },
+  {
+    version: 4,
+    at: '2026-08-11 16:22:00',
+    author: 'n.sibanda',
+    reason: 'Email-specific rule: PARTIAL_EMAIL for Support.',
+  },
+  {
+    version: 5,
+    at: '2026-09-04 10:31:00',
+    author: 'a.mehta',
+    reason: 'Tightened Analyst PII_MEDIUM to REDACT after privacy review.',
+  },
+  {
+    version: 6,
+    at: '2026-10-02 08:50:00',
+    author: 'o.taylor',
+    reason: 'Fail-closed default made explicit (fail_mode: closed).',
+  },
+  {
+    version: 7,
+    at: '2026-10-09 13:15:00',
+    author: 'n.sibanda',
+    reason: 'Support FINANCIAL_CONFIDENTIAL bucket width confirmed at 50,000.',
+  },
 ];
 
 export interface ScanLog {

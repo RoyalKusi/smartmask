@@ -33,7 +33,6 @@ rules:
     function: REDACT
 `;
 
-
 /**
  * The same policy, pre-parsed, so the engine can start without loading the YAML parser.
  * A unit test asserts this stays identical to parsing DEFAULT_POLICY_YAML.

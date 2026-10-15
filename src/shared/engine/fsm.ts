@@ -25,7 +25,8 @@ export function transition<S extends string, E extends string>(
   return next === undefined ? { state, ok: false } : { state: next, ok: true };
 }
 
-export type QueryStage = 'idle' | 'parse' | 'validate' | 'rewrite' | 'execute' | 'mask' | 'audit' | 'done' | 'rejected' | 'failed';
+export type QueryStage =
+  'idle' | 'parse' | 'validate' | 'rewrite' | 'execute' | 'mask' | 'audit' | 'done' | 'rejected' | 'failed';
 export type QueryEvent = 'RUN' | 'NEXT' | 'REJECT' | 'FAIL' | 'RESET';
 
 export const QUERY_TRANSITIONS: TransitionTable<QueryStage, QueryEvent> = {
@@ -41,7 +42,8 @@ export const QUERY_TRANSITIONS: TransitionTable<QueryStage, QueryEvent> = {
   failed: { RUN: 'parse', RESET: 'idle' },
 };
 
-export type ScanStage = 'idle' | 'connect' | 'catalog' | 'sample' | 'score' | 'classify' | 'complete' | 'failed';
+export type ScanStage =
+  'idle' | 'connect' | 'catalog' | 'sample' | 'score' | 'classify' | 'complete' | 'failed';
 export type ScanEvent = 'START' | 'NEXT' | 'FAIL' | 'RESET';
 export const SCAN_STAGES: readonly ScanStage[] = ['connect', 'catalog', 'sample', 'score', 'classify'];
 export const SCAN_TRANSITIONS: TransitionTable<ScanStage, ScanEvent> = {

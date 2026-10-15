@@ -21,7 +21,13 @@ function Chars({ text, total }: { text: string; total: number }) {
  * Renders a possibly-masked value. When the displayed text changes (for example after a role switch)
  * it cross-fades character by character over 160 ms; with reduced motion it simply swaps.
  */
-export function MaskedText({ value, mono = true }: { value: string | number | boolean | null | undefined; mono?: boolean }) {
+export function MaskedText({
+  value,
+  mono = true,
+}: {
+  value: string | number | boolean | null | undefined;
+  mono?: boolean;
+}) {
   const text = value === null || value === undefined ? '∅' : String(value);
   const reduced = useReducedMotion();
   const prev = useRef(text);
@@ -41,7 +47,11 @@ export function MaskedText({ value, mono = true }: { value: string | number | bo
   }, [text, reduced]);
   const isNull = value === null || value === undefined;
   return (
-    <span className={`sm-xfade${mono ? ' sm-mono' : ''}`} style={isNull ? { color: 'var(--sm-fg-tertiary)' } : undefined} title={text}>
+    <span
+      className={`sm-xfade${mono ? ' sm-mono' : ''}`}
+      style={isNull ? { color: 'var(--sm-fg-tertiary)' } : undefined}
+      title={text}
+    >
       {old !== null && (
         <span className="out" aria-hidden key={`o${gen}`}>
           <Chars text={old} total={Math.max(old.length, 1)} />

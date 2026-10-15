@@ -2,7 +2,9 @@ import type { BootStep, api as serverApi } from './server';
 
 type Server = typeof import('./server');
 type ApiShape = typeof serverApi;
-type Lazy<T> = { [K in keyof T]: T[K] extends (...a: infer A) => infer R ? (...a: A) => Promise<Awaited<R>> : never };
+type Lazy<T> = {
+  [K in keyof T]: T[K] extends (...a: infer A) => infer R ? (...a: A) => Promise<Awaited<R>> : never;
+};
 
 let loaded: Server | null = null;
 let pending: Promise<Server> | null = null;

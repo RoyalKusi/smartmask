@@ -42,8 +42,32 @@ interface NameRule {
   any?: string[];
 }
 
-const NAME_QUALIFIERS = ['first', 'last', 'full', 'middle', 'maiden', 'given', 'family', 'customer', 'holder', 'applicant', 'cardholder'];
-const NAME_ANTI = ['merchant', 'branch', 'product', 'bank', 'campaign', 'file', 'team', 'city', 'table', 'schema', 'plan'];
+const NAME_QUALIFIERS = [
+  'first',
+  'last',
+  'full',
+  'middle',
+  'maiden',
+  'given',
+  'family',
+  'customer',
+  'holder',
+  'applicant',
+  'cardholder',
+];
+const NAME_ANTI = [
+  'merchant',
+  'branch',
+  'product',
+  'bank',
+  'campaign',
+  'file',
+  'team',
+  'city',
+  'table',
+  'schema',
+  'plan',
+];
 
 const NAME_RULES: NameRule[] = [
   { family: 'PAN', weight: 1, any: ['pan', 'cc', 'ccn'] },
@@ -94,14 +118,31 @@ export function nameScore(column: string): NameMatch {
 
 /** Multilingual semantic lexicon the classifier uses where the rule dictionary has no entry. */
 const SEMANTIC_LEXICON: Record<string, [Family, number]> = {
-  kartu: ['PAN', 0.92], tarjeta: ['PAN', 0.92], carte: ['PAN', 0.9], karte: ['PAN', 0.9], kaart: ['PAN', 0.9], kad: ['PAN', 0.85],
-  telepon: ['PHONE', 0.9], telefono: ['PHONE', 0.9], telefon: ['PHONE', 0.9], handy: ['PHONE', 0.85],
-  alamat: ['ADDRESS', 0.9], direccion: ['ADDRESS', 0.9], adresse: ['ADDRESS', 0.9],
-  nama: ['PERSON_NAME', 0.8], nombre: ['PERSON_NAME', 0.8], nom: ['PERSON_NAME', 0.7],
-  surel: ['EMAIL', 0.9], correo: ['EMAIL', 0.9],
-  saldo: ['BALANCE', 0.9], solde: ['BALANCE', 0.9], guthaben: ['BALANCE', 0.9],
-  gaji: ['SALARY', 0.9], sueldo: ['SALARY', 0.9],
-  nik: ['SSN', 0.85], ktp: ['SSN', 0.85],
+  kartu: ['PAN', 0.92],
+  tarjeta: ['PAN', 0.92],
+  carte: ['PAN', 0.9],
+  karte: ['PAN', 0.9],
+  kaart: ['PAN', 0.9],
+  kad: ['PAN', 0.85],
+  telepon: ['PHONE', 0.9],
+  telefono: ['PHONE', 0.9],
+  telefon: ['PHONE', 0.9],
+  handy: ['PHONE', 0.85],
+  alamat: ['ADDRESS', 0.9],
+  direccion: ['ADDRESS', 0.9],
+  adresse: ['ADDRESS', 0.9],
+  nama: ['PERSON_NAME', 0.8],
+  nombre: ['PERSON_NAME', 0.8],
+  nom: ['PERSON_NAME', 0.7],
+  surel: ['EMAIL', 0.9],
+  correo: ['EMAIL', 0.9],
+  saldo: ['BALANCE', 0.9],
+  solde: ['BALANCE', 0.9],
+  guthaben: ['BALANCE', 0.9],
+  gaji: ['SALARY', 0.9],
+  sueldo: ['SALARY', 0.9],
+  nik: ['SSN', 0.85],
+  ktp: ['SSN', 0.85],
 };
 
 function semanticName(column: string): { score: number; family: Family | null } {
@@ -148,14 +189,19 @@ function evidence(v: string, nameFamily: Family | null, n: number): Evidence {
   // Name-conditioned weak shapes: only count when the column name already hints at the family.
   if (n >= 0.6 && nameFamily) {
     if (nameFamily === 'PERSON_NAME' && isName(raw)) set(0.6, 'PERSON_NAME');
-    if ((nameFamily === 'BALANCE' || nameFamily === 'AMOUNT' || nameFamily === 'SALARY') && /^-?\d+(\.\d{1,2})?$/.test(raw)) set(0.7, nameFamily);
+    if (
+      (nameFamily === 'BALANCE' || nameFamily === 'AMOUNT' || nameFamily === 'SALARY') &&
+      /^-?\d+(\.\d{1,2})?$/.test(raw)
+    )
+      set(0.7, nameFamily);
     if (nameFamily === 'DOB' && /^\d{4}-\d{2}-\d{2}/.test(raw)) set(0.6, 'DOB');
     if (nameFamily === 'ADDRESS' && /\d/.test(raw) && /\s/.test(raw)) set(0.6, 'ADDRESS');
     if (nameFamily === 'ACCOUNT_NO' && /^\d{8,18}$/.test(raw)) set(0.6, 'ACCOUNT_NO');
   }
 
   // Classifier-only: separators are noise (dots, NBSP, slashes), so look at the bare digit run.
-  if (dig.length >= 13 && dig.length <= 19 && /^[\d\s.\-/ ]+$/.test(raw)) setLoose(luhnValid(dig) ? 1 : 0.4, 'PAN');
+  if (dig.length >= 13 && dig.length <= 19 && /^[\d\s.\-/\u00a0]+$/.test(raw))
+    setLoose(luhnValid(dig) ? 1 : 0.4, 'PAN');
   if (dig.length === 9 && /^[\d\s.\-/]+$/.test(raw)) setLoose(0.5, 'SSN');
   if (dig.length === 12 && /^[\d\s.\-/]+$/.test(raw)) setLoose(verhoeffValid(dig) ? 0.9 : 0.35, 'AADHAAR');
   if (/[\w.+-]+\s?(\[at\]|\(at\)| at )\s?[\w.-]+/i.test(raw)) setLoose(0.8, 'EMAIL');
@@ -261,7 +307,9 @@ export function scoreColumn(column: string, sample: readonly Value[], tableIsEmp
     { feature: 'rule pattern evidence', weight: 1.1 * p },
     { feature: 'value entropy', weight: 0.6 * e },
   ];
-  const m = tableIsEmpty ? sigmoid(terms[0]!.weight + terms[1]!.weight) : sigmoid(terms.reduce((a, t) => a + t.weight, 0));
+  const m = tableIsEmpty
+    ? sigmoid(terms[0]!.weight + terms[1]!.weight)
+    : sigmoid(terms.reduce((a, t) => a + t.weight, 0));
 
   const nameFamily = name.n >= 0.8 || (name.n >= 0.6 && p >= 0.5) ? name.family : null;
   const family: Family =

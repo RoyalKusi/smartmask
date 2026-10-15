@@ -55,7 +55,12 @@ export interface Pool {
 }
 
 const COUNTRY: Record<Locale, string> = { IN: 'IN', ZW: 'ZW', UK: 'GB', US: 'US' };
-const strip = (s: string): string => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z]/g, '');
+const strip = (s: string): string =>
+  s
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z]/g, '');
 
 function phoneFor(locale: Locale, rng: Rng): string {
   switch (locale) {
@@ -94,8 +99,10 @@ function makePerson(id: number, rng: Rng): Person {
     first = 'Aarav';
     last = 'Mehta';
   }
-  const unicodeEmail = rng.chance(0.03) && /[^\x00-\x7f]/.test(first + last);
-  localPart = unicodeEmail ? `${first}.${last}`.toLowerCase().replace(/[^\p{L}.]/gu, '') : `${strip(first)}.${strip(last)}`;
+  const unicodeEmail = rng.chance(0.03) && /\P{ASCII}/u.test(first + last);
+  localPart = unicodeEmail
+    ? `${first}.${last}`.toLowerCase().replace(/[^\p{L}.]/gu, '')
+    : `${strip(first)}.${strip(last)}`;
   if (rng.chance(0.3)) localPart += rng.int(1, 99);
   if (rng.chance(0.08)) localPart += `+${rng.pick(['bank', 'shop', 'news', 'cards'])}`;
   const email = `${localPart}@${rng.pick(EMAIL_DOMAINS[locale])}`;
@@ -141,17 +148,29 @@ export function getPool(): Pool {
       accountNo: `${rng.pick(['301', '302', '455', '620'])}${rng.digits(9)}`,
       iban: makeIban(rng.chance(0.7) ? 'GB' : 'DE', rng),
       balance: i === 1 ? 128450 : Math.round(raw * 100) / 100,
-      currency: rng.weighted([['INR', 40], ['GBP', 25], ['USD', 20], ['ZWG', 15]]),
+      currency: rng.weighted([
+        ['INR', 40],
+        ['GBP', 25],
+        ['USD', 20],
+        ['ZWG', 15],
+      ]),
     });
   }
 
   const cards: CardRec[] = [];
   const cardsByAccount = new Map<number, CardRec[]>();
   for (let i = 1; i <= SIZES.cards; i++) {
-    const acct = i === 1 ? (accounts[0] as AccountRec) : (accounts[rng.int(0, accounts.length - 1)] as AccountRec);
+    const acct =
+      i === 1 ? (accounts[0] as AccountRec) : (accounts[rng.int(0, accounts.length - 1)] as AccountRec);
     const visa = i === 1 ? true : rng.chance(0.6);
     const pan = i === 1 ? '4111111111111111' : makePan(visa ? '4111' : '5555', rng);
-    const rec: CardRec = { id: i, customerId: acct.customerId, accountId: acct.id, pan: groupPan(pan), brand: visa ? 'VISA' : 'MASTERCARD' };
+    const rec: CardRec = {
+      id: i,
+      customerId: acct.customerId,
+      accountId: acct.id,
+      pan: groupPan(pan),
+      brand: visa ? 'VISA' : 'MASTERCARD',
+    };
     cards.push(rec);
     const list = cardsByAccount.get(acct.id) ?? [];
     list.push(rec);
@@ -160,7 +179,11 @@ export function getPool(): Pool {
 
   const loans: LoanRec[] = [];
   for (let i = 1; i <= SIZES.loans; i++) {
-    loans.push({ id: i, customerId: rng.int(1, SIZES.customers), principal: Math.round(Math.min(2_000_000, Math.max(20_000, rng.logNormal(12.1, 0.8)))) });
+    loans.push({
+      id: i,
+      customerId: rng.int(1, SIZES.customers),
+      principal: Math.round(Math.min(2_000_000, Math.max(20_000, rng.logNormal(12.1, 0.8)))),
+    });
   }
   cached = { customers, accounts, cards, loans, cardsByAccount };
   return cached;

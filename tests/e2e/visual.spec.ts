@@ -1,7 +1,17 @@
 import { expect, test } from '@playwright/test';
 import { open, waitForData } from './helpers';
 
-const VIEWS = ['overview', 'discovery', 'review', 'policy', 'workbench', 'verification', 'audit', 'performance', 'anomalies'] as const;
+const VIEWS = [
+  'overview',
+  'discovery',
+  'review',
+  'policy',
+  'workbench',
+  'verification',
+  'audit',
+  'performance',
+  'anomalies',
+] as const;
 
 for (const theme of ['light', 'dark'] as const) {
   test.describe(`visual snapshots, ${theme}`, () => {
@@ -17,7 +27,11 @@ for (const theme of ['light', 'dark'] as const) {
         // Wait for number count-ups and chart paint, then freeze everything time-dependent.
         await page.waitForTimeout(1200);
         await expect(page).toHaveScreenshot(`${view}-${theme}.png`, {
-          mask: [page.locator('[aria-label="Live cache after a policy publish"]'), page.locator('.sm-table-foot'), page.getByRole('status')],
+          mask: [
+            page.locator('[aria-label="Live cache after a policy publish"]'),
+            page.locator('.sm-table-foot'),
+            page.getByRole('status'),
+          ],
           maxDiffPixelRatio: 0.03,
         });
       });

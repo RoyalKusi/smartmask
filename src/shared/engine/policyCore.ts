@@ -86,4 +86,3 @@ export function withVersion(text: string, version: number): string {
     ? text.replace(/^policy_version:.*$/m, `policy_version: ${version}`)
     : `policy_version: ${version}\n${text}`;
 }
-

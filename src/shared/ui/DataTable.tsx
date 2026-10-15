@@ -1,15 +1,42 @@
 import {
-  Button, Checkbox, Menu, MenuDivider, MenuItem, MenuItemCheckbox, MenuList, MenuPopover, MenuTrigger,
+  Button,
+  Checkbox,
+  Menu,
+  MenuDivider,
+  MenuItem,
+  MenuItemCheckbox,
+  MenuList,
+  MenuPopover,
+  MenuTrigger,
 } from '@fluentui/react-components';
 import {
-  ArrowSortDown16Regular, ArrowSortUp16Regular, Filter16Filled, Filter16Regular, ChevronDown16Regular,
+  ArrowSortDown16Regular,
+  ArrowSortUp16Regular,
+  Filter16Filled,
+  Filter16Regular,
+  ChevronDown16Regular,
 } from '@fluentui/react-icons';
 import {
-  flexRender, getCoreRowModel, getSortedRowModel, useReactTable,
-  type ColumnDef, type ColumnSizingState, type RowSelectionState, type SortingState,
+  flexRender,
+  getCoreRowModel,
+  getSortedRowModel,
+  useReactTable,
+  type ColumnDef,
+  type ColumnSizingState,
+  type RowSelectionState,
+  type SortingState,
 } from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { useCallback, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+} from 'react';
 import { useCompact } from './useMedia';
 import { Skel } from './Skeleton';
 
@@ -21,7 +48,11 @@ export interface Column<T> {
   cell: (row: T) => ReactNode;
   sortValue?: (row: T) => string | number | null;
   align?: 'left' | 'right';
-  filter?: { options: { value: string; label: string }[]; selected: string[]; onChange: (v: string[]) => void };
+  filter?: {
+    options: { value: string; label: string }[];
+    selected: string[];
+    onChange: (v: string[]) => void;
+  };
   /** Compact card view: 'title' is the card heading, 'hide' omits the field. */
   card?: 'title' | 'hide';
 }
@@ -53,7 +84,24 @@ interface Props<T> {
 const VIRTUALIZE_ABOVE = 100;
 
 export function DataTable<T>(props: Props<T>) {
-  const { rows, columns, getId, ariaLabel, sort, onSortChange, selectable, selected = [], onSelectedChange, bulkActions, onOpen, activeId, density = 'comfortable', height = 'min(68vh, 720px)', footer, animateRows } = props;
+  const {
+    rows,
+    columns,
+    getId,
+    ariaLabel,
+    sort,
+    onSortChange,
+    selectable,
+    selected = [],
+    onSelectedChange,
+    bulkActions,
+    onOpen,
+    activeId,
+    density = 'comfortable',
+    height = 'min(68vh, 720px)',
+    footer,
+    animateRows,
+  } = props;
   const compact = useCompact();
   const uid = useId();
   const rowH = density === 'compact' ? 28 : 36;
@@ -63,7 +111,10 @@ export function DataTable<T>(props: Props<T>) {
   const [wrapW, setWrapW] = useState(0);
   const seen = useRef<Set<string>>(new Set());
 
-  const selection = useMemo<RowSelectionState>(() => Object.fromEntries(selected.map((id) => [id, true])), [selected]);
+  const selection = useMemo<RowSelectionState>(
+    () => Object.fromEntries(selected.map((id) => [id, true])),
+    [selected],
+  );
   const sorting = useMemo<SortingState>(() => (sort ? [{ id: sort.id, desc: sort.desc }] : []), [sort]);
 
   const defs = useMemo<ColumnDef<T>[]>(
@@ -81,6 +132,8 @@ export function DataTable<T>(props: Props<T>) {
     [columns],
   );
 
+  // TanStack Table's instance is not memoisable; this app does not use the React Compiler.
+  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable<T>({
     data: rows as T[],
     columns: defs,
@@ -113,7 +166,10 @@ export function DataTable<T>(props: Props<T>) {
     overscan: 8,
     measureElement: compact ? (el) => el.getBoundingClientRect().height : undefined,
   });
-  const items = virtualize || compact ? virt.getVirtualItems() : model.map((_, index) => ({ index, start: index * rowH, size: rowH, key: index }));
+  const items =
+    virtualize || compact
+      ? virt.getVirtualItems()
+      : model.map((_, index) => ({ index, start: index * rowH, size: rowH, key: index }));
   const totalH = virtualize || compact ? virt.getTotalSize() : count * rowH;
 
   useEffect(() => {
@@ -150,25 +206,52 @@ export function DataTable<T>(props: Props<T>) {
     if ((e.target as HTMLElement).closest('button, [role=menuitem], input')) return;
     const page = Math.max(1, Math.floor(((scrollRef.current?.clientHeight ?? 400) - 36) / rowH));
     switch (e.key) {
-      case 'ArrowDown': e.preventDefault(); moveTo(active + 1); break;
-      case 'ArrowUp': e.preventDefault(); moveTo(active - 1); break;
-      case 'PageDown': e.preventDefault(); moveTo(active + page); break;
-      case 'PageUp': e.preventDefault(); moveTo(active - page); break;
-      case 'Home': e.preventDefault(); moveTo(0); break;
-      case 'End': e.preventDefault(); moveTo(count - 1); break;
+      case 'ArrowDown':
+        e.preventDefault();
+        moveTo(active + 1);
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        moveTo(active - 1);
+        break;
+      case 'PageDown':
+        e.preventDefault();
+        moveTo(active + page);
+        break;
+      case 'PageUp':
+        e.preventDefault();
+        moveTo(active - page);
+        break;
+      case 'Home':
+        e.preventDefault();
+        moveTo(0);
+        break;
+      case 'End':
+        e.preventDefault();
+        moveTo(count - 1);
+        break;
       case 'Enter': {
         const r = model[active];
-        if (r && onOpen) { e.preventDefault(); onOpen(r.original); }
+        if (r && onOpen) {
+          e.preventDefault();
+          onOpen(r.original);
+        }
         break;
       }
       case ' ': {
         const r = model[active];
-        if (r && selectable) { e.preventDefault(); r.toggleSelected(); }
+        if (r && selectable) {
+          e.preventDefault();
+          r.toggleSelected();
+        }
         break;
       }
       case 'a':
       case 'A':
-        if ((e.ctrlKey || e.metaKey) && selectable) { e.preventDefault(); table.toggleAllRowsSelected(true); }
+        if ((e.ctrlKey || e.metaKey) && selectable) {
+          e.preventDefault();
+          table.toggleAllRowsSelected(true);
+        }
         break;
       case 'Escape':
         if (selected.length) onSelectedChange?.([]);
@@ -176,7 +259,10 @@ export function DataTable<T>(props: Props<T>) {
     }
   };
 
-  const selectedRows = useMemo(() => model.filter((r) => selection[r.id]).map((r) => r.original), [model, selection]);
+  const selectedRows = useMemo(
+    () => model.filter((r) => selection[r.id]).map((r) => r.original),
+    [model, selection],
+  );
   const allSelected = count > 0 && model.every((r) => selection[r.id]);
   const someSelected = selected.length > 0 && !allSelected;
   const cols = table.getVisibleLeafColumns();
@@ -194,7 +280,9 @@ export function DataTable<T>(props: Props<T>) {
         <div className="sm-bulkbar" role="toolbar" aria-label="Bulk actions">
           <strong>{selected.length} selected</strong>
           {bulkActions?.(selectedRows, () => onSelectedChange?.([]))}
-          <Button size="small" appearance="subtle" onClick={() => onSelectedChange?.([])}>Clear selection</Button>
+          <Button size="small" appearance="subtle" onClick={() => onSelectedChange?.([])}>
+            Clear selection
+          </Button>
         </div>
       )}
       <div
@@ -240,7 +328,11 @@ export function DataTable<T>(props: Props<T>) {
                           <span>{col.header}</span>
                           {sorted === 'asc' && <ArrowSortUp16Regular aria-hidden />}
                           {sorted === 'desc' && <ArrowSortDown16Regular aria-hidden />}
-                          {filtered ? <Filter16Filled aria-hidden style={{ color: 'var(--sm-brand)' }} /> : <ChevronDown16Regular aria-hidden />}
+                          {filtered ? (
+                            <Filter16Filled aria-hidden style={{ color: 'var(--sm-brand)' }} />
+                          ) : (
+                            <ChevronDown16Regular aria-hidden />
+                          )}
                         </button>
                       </MenuTrigger>
                       <MenuPopover>
@@ -250,21 +342,37 @@ export function DataTable<T>(props: Props<T>) {
                         >
                           {col.sortValue && (
                             <>
-                              <MenuItem icon={<ArrowSortUp16Regular />} onClick={() => onSortChange({ id: col.id, desc: false })}>Sort ascending</MenuItem>
-                              <MenuItem icon={<ArrowSortDown16Regular />} onClick={() => onSortChange({ id: col.id, desc: true })}>Sort descending</MenuItem>
-                              <MenuItem disabled={sorted === false} onClick={() => onSortChange(null)}>Clear sort</MenuItem>
+                              <MenuItem
+                                icon={<ArrowSortUp16Regular />}
+                                onClick={() => onSortChange({ id: col.id, desc: false })}
+                              >
+                                Sort ascending
+                              </MenuItem>
+                              <MenuItem
+                                icon={<ArrowSortDown16Regular />}
+                                onClick={() => onSortChange({ id: col.id, desc: true })}
+                              >
+                                Sort descending
+                              </MenuItem>
+                              <MenuItem disabled={sorted === false} onClick={() => onSortChange(null)}>
+                                Clear sort
+                              </MenuItem>
                             </>
                           )}
                           {col.filter && (
                             <>
                               {col.sortValue && <MenuDivider />}
-                              <MenuItem disabled icon={<Filter16Regular />}>Filter {col.header.toLowerCase()}</MenuItem>
+                              <MenuItem disabled icon={<Filter16Regular />}>
+                                Filter {col.header.toLowerCase()}
+                              </MenuItem>
                               {col.filter.options.map((o) => (
                                 <MenuItemCheckbox key={o.value} name={`f-${col.id}`} value={o.value}>
                                   {o.label}
                                 </MenuItemCheckbox>
                               ))}
-                              <MenuItem disabled={!filtered} onClick={() => col.filter?.onChange([])}>Clear filter</MenuItem>
+                              <MenuItem disabled={!filtered} onClick={() => col.filter?.onChange([])}>
+                                Clear filter
+                              </MenuItem>
                             </>
                           )}
                         </MenuList>
@@ -288,7 +396,11 @@ export function DataTable<T>(props: Props<T>) {
             })}
           </div>
         )}
-        <div style={{ position: 'relative', height: totalH, width: compact ? '100%' : totalW, minWidth: '100%' }} className={compact ? 'sm-cards' : undefined}>
+        <div
+          role="rowgroup"
+          style={{ position: 'relative', height: totalH, width: compact ? '100%' : totalW, minWidth: '100%' }}
+          className={compact ? 'sm-cards' : undefined}
+        >
           {items.map((vi) => {
             const row = model[vi.index];
             if (!row) return null;
@@ -309,9 +421,14 @@ export function DataTable<T>(props: Props<T>) {
                   className={`sm-rowcard${isNew ? ' sm-enter' : ''}`}
                   style={{ top: vi.start }}
                   tabIndex={-1}
-                  onClick={() => { setActive(vi.index); onOpen?.(row.original); }}
+                  onClick={() => {
+                    setActive(vi.index);
+                    onOpen?.(row.original);
+                  }}
                 >
-                  <div className="t-body1s" role="gridcell">{titleCol?.cell(row.original)}</div>
+                  <div className="t-body1s" role="gridcell">
+                    {titleCol?.cell(row.original)}
+                  </div>
                   <dl>
                     {rest.map((c) => (
                       <div key={c.id} style={{ display: 'contents' }} role="gridcell">
@@ -321,7 +438,12 @@ export function DataTable<T>(props: Props<T>) {
                     ))}
                   </dl>
                   {selectable && (
-                    <Checkbox label="Select" checked={isSel} onChange={() => row.toggleSelected()} onClick={(e) => e.stopPropagation()} />
+                    <Checkbox
+                      label="Select"
+                      checked={isSel}
+                      onChange={() => row.toggleSelected()}
+                      onClick={(e) => e.stopPropagation()}
+                    />
                   )}
                 </div>
               );
@@ -336,21 +458,37 @@ export function DataTable<T>(props: Props<T>) {
                 data-active={isActive && (activeId === undefined || true) ? 'true' : undefined}
                 className={`sm-tr${isNew ? ' sm-enter' : ''}`}
                 style={{
-                  top: vi.start, height: rowH, width: totalW,
-                  ...(activeId && getId(row.original) === activeId ? { background: 'color-mix(in srgb, var(--sm-brand) 8%, var(--sm-bg-surface))' } : {}),
+                  top: vi.start,
+                  height: rowH,
+                  width: totalW,
+                  ...(activeId && getId(row.original) === activeId
+                    ? { background: 'color-mix(in srgb, var(--sm-brand) 8%, var(--sm-bg-surface))' }
+                    : {}),
                 }}
-                onClick={() => { setActive(vi.index); }}
+                onClick={() => {
+                  setActive(vi.index);
+                }}
                 onDoubleClick={() => onOpen?.(row.original)}
               >
                 {selectable && (
                   <div className="sm-td" role="gridcell" style={{ width: checkW, padding: '0 8px' }}>
-                    <Checkbox aria-label={`Select row ${vi.index + 1}`} checked={isSel} onChange={() => row.toggleSelected()} />
+                    <Checkbox
+                      aria-label={`Select row ${vi.index + 1}`}
+                      checked={isSel}
+                      onChange={() => row.toggleSelected()}
+                    />
                   </div>
                 )}
                 {row.getVisibleCells().map((cell) => {
                   const col = columns.find((c) => c.id === cell.column.id) as Column<T>;
                   return (
-                    <div key={cell.id} className="sm-td" role="gridcell" data-align={col.align} style={{ width: colW(cell.column.getSize()) }}>
+                    <div
+                      key={cell.id}
+                      className="sm-td"
+                      role="gridcell"
+                      data-align={col.align}
+                      style={{ width: colW(cell.column.getSize()) }}
+                    >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </div>
                   );

@@ -2,7 +2,14 @@ import { toHex } from './hash';
 import type { Family, Value } from './types';
 
 export type MaskFn = 'PLAINTEXT' | 'PARTIAL_KEEP' | 'PARTIAL_EMAIL' | 'BUCKET' | 'REDACT' | 'HMAC_TOKEN';
-export const MASK_FNS: readonly MaskFn[] = ['PLAINTEXT', 'PARTIAL_KEEP', 'PARTIAL_EMAIL', 'BUCKET', 'REDACT', 'HMAC_TOKEN'];
+export const MASK_FNS: readonly MaskFn[] = [
+  'PLAINTEXT',
+  'PARTIAL_KEEP',
+  'PARTIAL_EMAIL',
+  'BUCKET',
+  'REDACT',
+  'HMAC_TOKEN',
+];
 
 export interface MaskArgs {
   keep_first?: number;
@@ -74,7 +81,8 @@ function groupThousands(n: number): string {
 }
 
 export function bucket(value: Value, width = DEFAULT_BUCKET_WIDTH): Value {
-  if (value === null) return null;
+  // NULL and empty string carry no amount: they pass through (revealing only absence) rather than becoming a bucket for 0.
+  if (value === null || value === '') return value;
   const n = typeof value === 'number' ? value : Number(value);
   if (!Number.isFinite(n) || width <= 0) return REDACTED;
   const lo = Math.floor(n / width) * width;
@@ -104,9 +112,16 @@ export class TokenVault {
     let k = this.keys.get(tag);
     if (!k) {
       k = (async () => {
-        const base = await crypto.subtle.importKey('raw', encoder.encode(this.masterSecret), 'HKDF', false, ['deriveKey']);
+        const base = await crypto.subtle.importKey('raw', encoder.encode(this.masterSecret), 'HKDF', false, [
+          'deriveKey',
+        ]);
         return crypto.subtle.deriveKey(
-          { name: 'HKDF', hash: 'SHA-256', salt: encoder.encode(this.salt), info: encoder.encode(`token:${tag}`) },
+          {
+            name: 'HKDF',
+            hash: 'SHA-256',
+            salt: encoder.encode(this.salt),
+            info: encoder.encode(`token:${tag}`),
+          },
           base,
           { name: 'HMAC', hash: 'SHA-256', length: 256 },
           false,

@@ -21,8 +21,7 @@ export interface SelectItem {
 }
 
 export type TableRef =
-  | { k: 'table'; schema?: string; name: string; alias?: string }
-  | { k: 'derived'; q: Query; alias: string };
+  { k: 'table'; schema?: string; name: string; alias?: string } | { k: 'derived'; q: Query; alias: string };
 
 export interface Join {
   type: 'INNER' | 'LEFT' | 'RIGHT' | 'FULL' | 'CROSS';

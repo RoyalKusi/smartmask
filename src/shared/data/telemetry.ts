@@ -52,7 +52,9 @@ export function buildTelemetry(events: readonly AuditEvent[]): Telemetry {
     (hourEvents[Math.floor(m / 60)] as AuditEvent[]).push(e);
   }
 
-  const bumps = POLICY_HISTORY.map((p) => Math.floor((Date.parse(`${p.at.replace(' ', 'T')}Z`) - WINDOW_START) / 60_000)).filter((m) => m >= 0 && m < minutes);
+  const bumps = POLICY_HISTORY.map((p) =>
+    Math.floor((Date.parse(`${p.at.replace(' ', 'T')}Z`) - WINDOW_START) / 60_000),
+  ).filter((m) => m >= 0 && m < minutes);
   const rng = createRng('cache-series');
   const cacheHit = new Float32Array(minutes);
   let lastBump: number | null = null;
@@ -66,7 +68,8 @@ export function buildTelemetry(events: readonly AuditEvent[]): Telemetry {
     const counts = { ROLE_ADMIN: 0, ROLE_SUPPORT: 0, ROLE_ANALYST: 0 } as Record<Role, number>;
     const ms = evs.map((e) => e.execution_time_ms).sort((a, b) => a - b);
     for (const e of evs) counts[e.requesting_role]++;
-    const st = (k: 'parse' | 'policy' | 'mutation' | 'render' | 'audit'): number => mean(evs.map((e) => e.stages?.[k] ?? 0));
+    const st = (k: 'parse' | 'policy' | 'mutation' | 'render' | 'audit'): number =>
+      mean(evs.map((e) => e.stages?.[k] ?? 0));
     return {
       start: WINDOW_START + h * 3_600_000,
       counts,
@@ -76,7 +79,13 @@ export function buildTelemetry(events: readonly AuditEvent[]): Telemetry {
       p95: percentile(ms, 95),
       p99: percentile(ms, 99),
       max: ms[ms.length - 1] ?? 0,
-      stages: { parse: st('parse'), policy: st('policy'), mutation: st('mutation'), render: st('render'), audit: st('audit') },
+      stages: {
+        parse: st('parse'),
+        policy: st('policy'),
+        mutation: st('mutation'),
+        render: st('render'),
+        audit: st('audit'),
+      },
     };
   });
   return { start: WINDOW_START, minutes, perMinute, cacheHit, hours, policyBumps: bumps };

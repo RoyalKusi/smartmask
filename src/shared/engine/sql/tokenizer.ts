@@ -8,10 +8,49 @@ export interface Token {
 }
 
 export const KEYWORDS = new Set([
-  'SELECT', 'FROM', 'WHERE', 'GROUP', 'BY', 'ORDER', 'HAVING', 'LIMIT', 'OFFSET', 'JOIN', 'INNER', 'LEFT',
-  'RIGHT', 'FULL', 'OUTER', 'CROSS', 'ON', 'AS', 'AND', 'OR', 'NOT', 'IN', 'IS', 'NULL', 'LIKE', 'ILIKE',
-  'BETWEEN', 'EXISTS', 'CASE', 'WHEN', 'THEN', 'ELSE', 'END', 'DISTINCT', 'UNION', 'ALL', 'WITH', 'ASC',
-  'DESC', 'TRUE', 'FALSE', 'CAST', 'RECURSIVE',
+  'SELECT',
+  'FROM',
+  'WHERE',
+  'GROUP',
+  'BY',
+  'ORDER',
+  'HAVING',
+  'LIMIT',
+  'OFFSET',
+  'JOIN',
+  'INNER',
+  'LEFT',
+  'RIGHT',
+  'FULL',
+  'OUTER',
+  'CROSS',
+  'ON',
+  'AS',
+  'AND',
+  'OR',
+  'NOT',
+  'IN',
+  'IS',
+  'NULL',
+  'LIKE',
+  'ILIKE',
+  'BETWEEN',
+  'EXISTS',
+  'CASE',
+  'WHEN',
+  'THEN',
+  'ELSE',
+  'END',
+  'DISTINCT',
+  'UNION',
+  'ALL',
+  'WITH',
+  'ASC',
+  'DESC',
+  'TRUE',
+  'FALSE',
+  'CAST',
+  'RECURSIVE',
 ]);
 
 const TWO = new Set(['<=', '>=', '<>', '!=', '||']);
@@ -73,7 +112,11 @@ export function tokenize(sql: string): Token[] {
       let j = i + 1;
       while (j < n && /[\p{L}\p{N}_$]/u.test(sql[j] as string)) j++;
       const word = sql.slice(i, j);
-      out.push({ t: KEYWORDS.has(word.toUpperCase()) ? 'kw' : 'id', v: KEYWORDS.has(word.toUpperCase()) ? word.toUpperCase() : word, pos: i });
+      out.push({
+        t: KEYWORDS.has(word.toUpperCase()) ? 'kw' : 'id',
+        v: KEYWORDS.has(word.toUpperCase()) ? word.toUpperCase() : word,
+        pos: i,
+      });
       i = j;
       continue;
     }

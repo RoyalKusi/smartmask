@@ -7,7 +7,8 @@ import type { PolicyVersionLog, Principal, ScanLog } from '../data/principals';
 import type { ScanStage } from '../engine/fsm';
 import type { Policy } from '../engine/policyCore';
 
-export type ActivityKind = 'scan' | 'policy' | 'review' | 'role' | 'alert' | 'query' | 'export' | 'backend' | 'audit' | 'drift';
+export type ActivityKind =
+  'scan' | 'policy' | 'review' | 'role' | 'alert' | 'query' | 'export' | 'backend' | 'audit' | 'drift';
 export interface ActivityItem {
   id: string;
   at: string;
@@ -105,7 +106,14 @@ export interface AuditData {
 }
 
 export interface PerformanceData {
-  hours: { start: number; p50: number; p95: number; p99: number; total: number; stages: Record<'parse' | 'policy' | 'mutation' | 'render' | 'audit', number> }[];
+  hours: {
+    start: number;
+    p50: number;
+    p95: number;
+    p99: number;
+    total: number;
+    stages: Record<'parse' | 'policy' | 'mutation' | 'render' | 'audit', number>;
+  }[];
   stageMeans: Record<'parse' | 'policy' | 'mutation' | 'render' | 'audit', number>;
   p50: number;
   p95: number;

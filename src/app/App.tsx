@@ -1,7 +1,8 @@
 import { FluentProvider } from '@fluentui/react-components';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { Suspense, lazy, useEffect, useRef, type ComponentType } from 'react';
+import { Suspense, lazy, useEffect, useState, type ComponentType } from 'react';
 import { boot, subscribeChanges } from '../shared/api/client';
+import { setChaos, useChaos } from '../shared/api/chaos';
 import { applyPalette, fluentTheme } from '../shared/ui/tokens';
 import { ViewBoundary } from '../shared/ui/ErrorBoundary';
 import { NotifyProvider } from '../shared/ui/Notify';
@@ -26,15 +27,38 @@ const VIEWS: Record<ViewId, ComponentType> = {
   anomalies: lazy(() => import('../features/anomalies/AnomaliesView')),
 };
 
+/** Throws once when the Chaos menu asks for it, so the per-view error boundary can be demonstrated. */
+function CrashProbe() {
+  const { crashNext } = useChaos();
+  if (crashNext) {
+    queueMicrotask(() => setChaos({ crashNext: false }));
+    throw new Error('Injected view crash (Chaos menu): rendering failed on purpose');
+  }
+  return null;
+}
+
 function Frame() {
   const { view } = useRoute();
   const View = VIEWS[view];
   const label = NAV.find((n) => n.id === view)?.label ?? view;
-  const { navCollapsed, navOpen, boot: b, paletteOpen, chaosOpen, exportOpen, addBackendOpen, overrideColumnId } = useUi();
+  const {
+    navCollapsed,
+    navOpen,
+    boot: b,
+    paletteOpen,
+    chaosOpen,
+    exportOpen,
+    addBackendOpen,
+    overrideColumnId,
+  } = useUi();
   const { params } = useRoute();
   // Dialogs, the drawer and wizards load the first time one is requested.
-  const wantOverlay = useRef(false);
-  if (paletteOpen || chaosOpen || exportOpen || addBackendOpen || overrideColumnId || params.get('open')) wantOverlay.current = true;
+  const [wantOverlay, setWantOverlay] = useState(false);
+  if (
+    !wantOverlay &&
+    (paletteOpen || chaosOpen || exportOpen || addBackendOpen || overrideColumnId || params.get('open'))
+  )
+    setWantOverlay(true);
   return (
     <div className="sm-app">
       <CommandBar />
@@ -42,23 +66,45 @@ function Frame() {
         <Blade />
         <main className="sm-main" id="main" tabIndex={-1}>
           {!b.ready && (
-            <div role="progressbar" aria-label="Starting the simulated engine" aria-valuenow={b.pct} aria-valuemin={0} aria-valuemax={100} style={{ height: 3, background: 'var(--sm-stroke-subtle)' }}>
-              <div style={{ height: '100%', width: `${b.pct}%`, background: 'var(--sm-brand)', transition: 'width 300ms' }} />
+            <div
+              role="progressbar"
+              aria-label="Starting the simulated engine"
+              aria-valuenow={b.pct}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              style={{ height: 3, background: 'var(--sm-stroke-subtle)' }}
+            >
+              <div
+                style={{
+                  height: '100%',
+                  width: `${b.pct}%`,
+                  background: 'var(--sm-brand)',
+                  transition: 'width 300ms',
+                }}
+              />
             </div>
           )}
           <div className="sm-content">
             <ViewBoundary label={label} resetKey={view}>
-              <Suspense fallback={<div className="sm-stack" role="status" aria-label="Loading view"><CardsSkeleton count={4} /><TableSkeleton rows={6} /></div>}>
+              <Suspense
+                fallback={
+                  <div className="sm-stack" role="status" aria-label="Loading view">
+                    <CardsSkeleton count={4} />
+                    <TableSkeleton rows={6} />
+                  </div>
+                }
+              >
+                <CrashProbe />
                 <View />
               </Suspense>
             </ViewBoundary>
           </div>
         </main>
       </div>
-      <div className="sm-footer sm-acrylic sm-badge-sim" role="note">
+      <aside className="sm-footer sm-acrylic sm-badge-sim" aria-label="Prototype notice">
         <span aria-hidden>●</span> Synthetic data, simulated engine
-      </div>
-      {wantOverlay.current && (
+      </aside>
+      {wantOverlay && (
         <Suspense fallback={null}>
           <OverlayHost />
         </Suspense>
@@ -74,8 +120,12 @@ export function App() {
   useEffect(() => applyPalette(theme), [theme]);
 
   useEffect(() => {
-    boot((s) => setBoot({ label: s.label, pct: s.pct })).then(() => setBoot({ ready: true, pct: 100 })).catch((e: unknown) => setBoot({ error: String(e) }));
-    return subscribeChanges((keys) => keys.forEach((k) => void queryClient.invalidateQueries({ queryKey: [k] })));
+    boot((s) => setBoot({ label: s.label, pct: s.pct }))
+      .then(() => setBoot({ ready: true, pct: 100 }))
+      .catch((e: unknown) => setBoot({ error: String(e) }));
+    return subscribeChanges((keys) =>
+      keys.forEach((k) => void queryClient.invalidateQueries({ queryKey: [k] })),
+    );
   }, [setBoot]);
 
   useEffect(() => {

@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { diffStats, lineDiff } from '../../src/shared/engine/diff';
 import { DEFAULT_POLICY } from '../../src/shared/engine/defaultPolicy';
-import { DEFAULT_POLICY_YAML, copilotDraft, parsePolicy, resolveMask, ruleMatrix, withVersion } from '../../src/shared/engine/policy';
+import {
+  DEFAULT_POLICY_YAML,
+  copilotDraft,
+  parsePolicy,
+  resolveMask,
+  ruleMatrix,
+  withVersion,
+} from '../../src/shared/engine/policy';
 
 const strip = (p: { rules: { line?: number }[] }) => p.rules.map(({ line: _l, ...r }) => r);
 
@@ -34,22 +41,41 @@ describe('policy', () => {
   });
 
   it('validates roles, tags, functions, widths and duplicates', () => {
-    const bad = (rule: string) => parsePolicy(DEFAULT_POLICY_YAML.replace('rules:\n', `rules:\n${rule}`)).issues.filter((i) => i.severity === 'error');
-    expect(bad('  - { role: ROLE_X, tag: PII_HIGH, function: REDACT }\n').map((i) => i.code)).toContain('SM-POL-002');
-    expect(bad('  - { role: ROLE_ANALYST, tag: PII_HIGH, function: SHRED }\n').map((i) => i.code)).toContain('SM-POL-002');
-    expect(bad('  - { role: ROLE_ANALYST, tag: FINANCIAL_CONFIDENTIAL, function: BUCKET, width: -5 }\n').map((i) => i.code)).toContain('SM-POL-004');
-    expect(bad('  - { role: ROLE_ANALYST, tag: PII_HIGH, function: REDACT }\n').map((i) => i.code)).toContain('SM-POL-005');
+    const bad = (rule: string) =>
+      parsePolicy(DEFAULT_POLICY_YAML.replace('rules:\n', `rules:\n${rule}`)).issues.filter(
+        (i) => i.severity === 'error',
+      );
+    expect(bad('  - { role: ROLE_X, tag: PII_HIGH, function: REDACT }\n').map((i) => i.code)).toContain(
+      'SM-POL-002',
+    );
+    expect(bad('  - { role: ROLE_ANALYST, tag: PII_HIGH, function: SHRED }\n').map((i) => i.code)).toContain(
+      'SM-POL-002',
+    );
+    expect(
+      bad('  - { role: ROLE_ANALYST, tag: FINANCIAL_CONFIDENTIAL, function: BUCKET, width: -5 }\n').map(
+        (i) => i.code,
+      ),
+    ).toContain('SM-POL-004');
+    expect(bad('  - { role: ROLE_ANALYST, tag: PII_HIGH, function: REDACT }\n').map((i) => i.code)).toContain(
+      'SM-POL-005',
+    );
   });
 
   it('guardrail: non-admin PLAINTEXT on PII_HIGH is refused (SM-POL-003)', () => {
-    const text = DEFAULT_POLICY_YAML.replace('tag: PII_HIGH\n    function: PARTIAL_KEEP', 'tag: PII_HIGH\n    function: PLAINTEXT');
+    const text = DEFAULT_POLICY_YAML.replace(
+      'tag: PII_HIGH\n    function: PARTIAL_KEEP',
+      'tag: PII_HIGH\n    function: PLAINTEXT',
+    );
     const r = parsePolicy(text);
     expect(r.policy).toBeNull();
     expect(r.issues.some((i) => i.code === 'SM-POL-003')).toBe(true);
   });
 
   it('coverage: removing a role/tag rule is flagged because it would fail closed', () => {
-    const text = DEFAULT_POLICY_YAML.replace(/ {2}- role: ROLE_ANALYST\n {4}tag: PII_MEDIUM\n {4}function: REDACT\n/, '');
+    const text = DEFAULT_POLICY_YAML.replace(
+      / {2}- role: ROLE_ANALYST\n {4}tag: PII_MEDIUM\n {4}function: REDACT\n/,
+      '',
+    );
     expect(parsePolicy(text).issues.some((i) => i.code === 'SM-POL-006')).toBe(true);
   });
 
@@ -87,7 +113,10 @@ describe('copilot (drafts only)', () => {
 
   it('parses a bucket width', () => {
     const r = copilotDraft('Bucket balances in 25,000 bands for support', DEFAULT_POLICY_YAML);
-    expect(r.kind === 'ok' && resolveMask(parsePolicy(r.text).policy!, 'ROLE_SUPPORT', 'FINANCIAL_CONFIDENTIAL').args.width).toBe(25000);
+    expect(
+      r.kind === 'ok' &&
+        resolveMask(parsePolicy(r.text).policy!, 'ROLE_SUPPORT', 'FINANCIAL_CONFIDENTIAL').args.width,
+    ).toBe(25000);
   });
 
   it('a request that would weaken PII_HIGH produces a draft the validator rejects', () => {

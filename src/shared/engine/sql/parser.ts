@@ -14,7 +14,11 @@ class Parser {
   }
   private fail(msg: string): never {
     const t = this.cur;
-    throw new EngineError('SM-PARSE-001', `${msg} near ${t.t === 'eof' ? 'end of input' : `"${t.v}"`}.`, t.pos);
+    throw new EngineError(
+      'SM-PARSE-001',
+      `${msg} near ${t.t === 'eof' ? 'end of input' : `"${t.v}"`}.`,
+      t.pos,
+    );
   }
   private isKw(v: string, o = 0): boolean {
     const t = this.peek(o);
@@ -244,7 +248,9 @@ class Parser {
         this.expectKw('NULL');
         l = { k: 'isnull', e: l, not };
       } else {
-        const not = this.isKw('NOT') && (this.isKw('IN', 1) || this.isKw('LIKE', 1) || this.isKw('ILIKE', 1) || this.isKw('BETWEEN', 1));
+        const not =
+          this.isKw('NOT') &&
+          (this.isKw('IN', 1) || this.isKw('LIKE', 1) || this.isKw('ILIKE', 1) || this.isKw('BETWEEN', 1));
         if (not) this.i++;
         if (this.acceptKw('IN')) {
           this.expectP('(');

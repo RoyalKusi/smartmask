@@ -59,8 +59,13 @@ export function simulateStages(rng: Rng, complexity: number, executeMs?: number)
   const r = (x: number): number => Math.round(x * 1000) / 1000;
   const overhead = parse + policy + mutation + render + audit;
   return {
-    parse: r(parse), policy: r(policy), mutation: r(mutation), execute: r(executeMs ?? rng.float(80, 260)),
-    render: r(render), audit: r(audit), overhead: r(overhead),
+    parse: r(parse),
+    policy: r(policy),
+    mutation: r(mutation),
+    execute: r(executeMs ?? rng.float(80, 260)),
+    render: r(render),
+    audit: r(audit),
+    overhead: r(overhead),
   };
 }
 
@@ -125,7 +130,10 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
   }
   const rowCount = raw.rows.length;
   const truncated = rowCount > DISPLAY_ROW_CAP;
-  const shown: RowSet = { columns: raw.columns, rows: truncated ? raw.rows.slice(0, DISPLAY_ROW_CAP) : raw.rows };
+  const shown: RowSet = {
+    columns: raw.columns,
+    rows: truncated ? raw.rows.slice(0, DISPLAY_ROW_CAP) : raw.rows,
+  };
 
   const outcomes = {} as Record<Role, RoleOutcome>;
   const stages = {} as Record<Role, StageTimings>;
@@ -140,7 +148,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
       tagInfo: input.tagInfo,
     };
     let analysis: Analysis | null = null;
-    let violations: Violation[] = [];
+    let violations: Violation[];
     try {
       analysis = analyzeQuery(ast, env);
       violations = analysis.violations;
@@ -154,17 +162,28 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
       continue;
     }
     const rewrittenSql = formatQuery(analysis.rewritten, fmt);
-    const viewDdl = input.approach === 'views' && role !== 'ROLE_ADMIN' ? analysis.tables.map((t) => secureViewDdl(env, t)) : [];
+    const viewDdl =
+      input.approach === 'views' && role !== 'ROLE_ADMIN'
+        ? analysis.tables.map((t) => secureViewDdl(env, t))
+        : [];
     const cols = analysis.outCols;
     const pairs: [string, string][] = [];
     cols.forEach((c, ci) => {
-      if (c.mask?.fn === 'HMAC_TOKEN') for (const r of shown.rows) if (r[ci] !== null && r[ci] !== undefined) pairs.push([c.mask.tag, String(r[ci])]);
+      if (c.mask?.fn === 'HMAC_TOKEN')
+        for (const r of shown.rows)
+          if (r[ci] !== null && r[ci] !== undefined) pairs.push([c.mask.tag, String(r[ci])]);
     });
     await input.vault.prime(pairs);
     const masked = shown.rows.map((r) =>
       r.map((v, ci) => {
         const m = cols[ci]?.mask;
-        return m ? applyMask(m.fn, v, m.args, { tag: m.tag, ...(m.family ? { family: m.family } : {}), vault: input.vault }) : v;
+        return m
+          ? applyMask(m.fn, v, m.args, {
+              tag: m.tag,
+              ...(m.family ? { family: m.family } : {}),
+              vault: input.vault,
+            })
+          : v;
       }),
     );
     outcomes[role] = { role, violations: [], analysis, rewrittenSql, viewDdl, masked };

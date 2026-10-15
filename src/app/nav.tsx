@@ -1,6 +1,13 @@
 import {
-  Alert24Regular, ClipboardTaskListLtr24Regular, Code24Regular, DataPie24Regular, DocumentEdit24Regular, Gauge24Regular,
-  History24Regular, ScanDash24Regular, ShieldCheckmark24Regular,
+  Alert24Regular,
+  ClipboardTaskListLtr24Regular,
+  Code24Regular,
+  DataPie24Regular,
+  DocumentEdit24Regular,
+  Gauge24Regular,
+  History24Regular,
+  ScanDash24Regular,
+  ShieldCheckmark24Regular,
 } from '@fluentui/react-icons';
 import type { ReactNode } from 'react';
 import type { ViewId } from './router';

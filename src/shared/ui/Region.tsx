@@ -1,6 +1,11 @@
-import { ArrowClockwise24Regular, CloudDismiss24Regular, DocumentSearch24Regular } from '@fluentui/react-icons';
+import {
+  ArrowClockwise24Regular,
+  CloudDismiss24Regular,
+  DocumentSearch24Regular,
+} from '@fluentui/react-icons';
 import { Button } from '@fluentui/react-components';
-import { useEffect, useReducer, useRef, type ReactNode } from 'react';
+import { useEffect, useReducer, type ReactNode } from 'react';
+import { useLatest } from './useLatest';
 import { LOAD_TRANSITIONS, transition, type LoadEvent, type LoadState } from '../engine/fsm';
 import { describeError } from '../api/errors';
 
@@ -22,9 +27,11 @@ export interface LoadMachine {
  * Every transition goes through the declared table in shared/engine/fsm.
  */
 export function useLoadMachine<T>(q: QueryLike<T>, isEmpty: (d: T) => boolean = () => false): LoadMachine {
-  const [state, dispatch] = useReducer((s: LoadState, e: LoadEvent) => transition(LOAD_TRANSITIONS, s, e).state, 'idle' as LoadState);
-  const emptyRef = useRef(isEmpty);
-  emptyRef.current = isEmpty;
+  const [state, dispatch] = useReducer(
+    (s: LoadState, e: LoadEvent) => transition(LOAD_TRANSITIONS, s, e).state,
+    'idle' as LoadState,
+  );
+  const emptyRef = useLatest(isEmpty);
   useEffect(() => {
     if (state === 'idle') dispatch('FETCH');
   }, [state]);
@@ -36,7 +43,7 @@ export function useLoadMachine<T>(q: QueryLike<T>, isEmpty: (d: T) => boolean = 
       else if (state === 'empty' && ev === 'RESOLVE') dispatch(ev);
       else if (state === 'error') dispatch('FETCH');
     } else if (q.status === 'error' && (state === 'loading' || state === 'retrying')) dispatch('REJECT');
-  }, [q.status, q.data, state]);
+  }, [q.status, q.data, state, emptyRef]);
   return {
     state,
     error: q.status === 'error' ? describeError(q.error) : null,
@@ -47,7 +54,19 @@ export function useLoadMachine<T>(q: QueryLike<T>, isEmpty: (d: T) => boolean = 
   };
 }
 
-export function ErrorPanel({ code, message, technical, onRetry, retrying }: { code: string; message: string; technical: string; onRetry?: () => void; retrying?: boolean }) {
+export function ErrorPanel({
+  code,
+  message,
+  technical,
+  onRetry,
+  retrying,
+}: {
+  code: string;
+  message: string;
+  technical: string;
+  onRetry?: () => void;
+  retrying?: boolean;
+}) {
   return (
     <div className="sm-card" role="alert">
       <div className="sm-panel-msg">
@@ -62,7 +81,12 @@ export function ErrorPanel({ code, message, technical, onRetry, retrying }: { co
           <pre>{technical}</pre>
         </details>
         {onRetry && (
-          <Button appearance="primary" icon={<ArrowClockwise24Regular />} onClick={onRetry} disabled={retrying}>
+          <Button
+            appearance="primary"
+            icon={<ArrowClockwise24Regular />}
+            onClick={onRetry}
+            disabled={retrying}
+          >
             {retrying ? 'Retrying…' : 'Retry'}
           </Button>
         )}
@@ -71,7 +95,15 @@ export function ErrorPanel({ code, message, technical, onRetry, retrying }: { co
   );
 }
 
-export function EmptyPanel({ title, children, action }: { title: string; children?: ReactNode; action?: ReactNode }) {
+export function EmptyPanel({
+  title,
+  children,
+  action,
+}: {
+  title: string;
+  children?: ReactNode;
+  action?: ReactNode;
+}) {
   return (
     <div className="sm-card">
       <div className="sm-panel-msg">
@@ -84,7 +116,17 @@ export function EmptyPanel({ title, children, action }: { title: string; childre
   );
 }
 
-export function Region({ machine, skeleton, empty, children }: { machine: LoadMachine; skeleton: ReactNode; empty: ReactNode; children: ReactNode }) {
+export function Region({
+  machine,
+  skeleton,
+  empty,
+  children,
+}: {
+  machine: LoadMachine;
+  skeleton: ReactNode;
+  empty: ReactNode;
+  children: ReactNode;
+}) {
   switch (machine.state) {
     case 'idle':
     case 'loading':
@@ -92,12 +134,21 @@ export function Region({ machine, skeleton, empty, children }: { machine: LoadMa
     case 'retrying':
       return (
         <div>
-          <div className="sm-visually-hidden" role="status">Retrying</div>
+          <div className="sm-visually-hidden" role="status">
+            Retrying
+          </div>
           {skeleton}
         </div>
       );
     case 'error':
-      return <ErrorPanel code={machine.error?.code ?? 'SM-UI-001'} message={machine.error?.message ?? 'Unexpected error'} technical={machine.error?.technical ?? ''} onRetry={machine.retry} />;
+      return (
+        <ErrorPanel
+          code={machine.error?.code ?? 'SM-UI-001'}
+          message={machine.error?.message ?? 'Unexpected error'}
+          technical={machine.error?.technical ?? ''}
+          onRetry={machine.retry}
+        />
+      );
     case 'empty':
       return <>{empty}</>;
     case 'success':

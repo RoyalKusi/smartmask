@@ -6,7 +6,14 @@ import { EngineError, type Dialect, type Role } from '../../src/shared/engine/ty
 import { policy, tagInfo } from './helpers';
 import { schemaLookup } from '../../src/shared/data/runtime';
 
-const env = (role: Role, dialect: Dialect, approach: 'views' | 'ast'): AnalyzeEnv => ({ role, dialect, approach, policy, schema: schemaLookup, tagInfo });
+const env = (role: Role, dialect: Dialect, approach: 'views' | 'ast'): AnalyzeEnv => ({
+  role,
+  dialect,
+  approach,
+  policy,
+  schema: schemaLookup,
+  tagInfo,
+});
 const rewrite = (sql: string, role: Role, dialect: Dialect = 'sqlite', approach: 'views' | 'ast' = 'ast') =>
   formatQuery(analyzeQuery(parseSql(sql), env(role, dialect, approach)).rewritten, { dialect });
 
@@ -20,7 +27,13 @@ describe('parser and formatter', () => {
     expect(twice).toBe(once);
   });
   it('rejects unparseable SQL with SM-PARSE-001', () => {
-    for (const bad of ['SELEC * FROM x', 'SELECT FROM', "SELECT 'unterminated", 'SELECT a FROM t WHERE', '']) {
+    for (const bad of [
+      'SELEC * FROM x',
+      'SELECT FROM',
+      "SELECT 'unterminated",
+      'SELECT a FROM t WHERE',
+      '',
+    ]) {
       try {
         parseSql(bad);
         throw new Error(`should have failed: ${bad}`);
@@ -37,7 +50,8 @@ describe('parser and formatter', () => {
 });
 
 describe('rewriting golden tests', () => {
-  const sql = 'SELECT c.card_no, a.balance FROM cards c JOIN accounts a ON a.account_id = c.account_id WHERE c.customer_id = 1';
+  const sql =
+    'SELECT c.card_no, a.balance FROM cards c JOIN accounts a ON a.account_id = c.account_id WHERE c.customer_id = 1';
   it('Admin: unchanged semantics, no masking functions', () => {
     expect(rewrite(sql, 'ROLE_ADMIN')).not.toMatch(/sm_/);
   });
@@ -80,7 +94,8 @@ describe('rewriting golden tests', () => {
 });
 
 describe('policy violations', () => {
-  const v = (sql: string, role: Role) => analyzeQuery(parseSql(sql), env(role, 'sqlite', 'ast')).violations.map((x) => x.code);
+  const v = (sql: string, role: Role) =>
+    analyzeQuery(parseSql(sql), env(role, 'sqlite', 'ast')).violations.map((x) => x.code);
   it('SM-PRED-001: literal predicate on a tagged column for Support and Analyst, never for Admin', () => {
     const sql = "SELECT customer_id FROM cards WHERE card_no = '4111-1111-1111-1111'";
     expect(v(sql, 'ROLE_SUPPORT')).toEqual(['SM-PRED-001']);
@@ -89,26 +104,43 @@ describe('policy violations', () => {
   });
   it('SM-PRED-001 also covers IN lists, BETWEEN, LIKE and predicates reached through an alias', () => {
     expect(v("SELECT 1 FROM customers WHERE ssn IN ('1','2')", 'ROLE_ANALYST')).toContain('SM-PRED-001');
-    expect(v('SELECT 1 FROM accounts WHERE balance BETWEEN 1 AND 5', 'ROLE_SUPPORT')).toContain('SM-PRED-001');
+    expect(v('SELECT 1 FROM accounts WHERE balance BETWEEN 1 AND 5', 'ROLE_SUPPORT')).toContain(
+      'SM-PRED-001',
+    );
     expect(v("SELECT 1 FROM customers WHERE email LIKE '%@x%'", 'ROLE_ANALYST')).toContain('SM-PRED-001');
-    expect(v("SELECT 1 FROM (SELECT ssn AS s FROM customers) t WHERE t.s = '123'", 'ROLE_ANALYST')).toContain('SM-PRED-001');
+    expect(v("SELECT 1 FROM (SELECT ssn AS s FROM customers) t WHERE t.s = '123'", 'ROLE_ANALYST')).toContain(
+      'SM-PRED-001',
+    );
   });
   it('column-to-column comparison and joins on tagged columns are allowed (token joins work)', () => {
-    expect(v('SELECT c.customer_id FROM customers c JOIN loans l ON l.applicant_ssn = c.ssn', 'ROLE_ANALYST')).toEqual([]);
+    expect(
+      v('SELECT c.customer_id FROM customers c JOIN loans l ON l.applicant_ssn = c.ssn', 'ROLE_ANALYST'),
+    ).toEqual([]);
   });
   it('SM-DERIVED-001: functions and aggregates over tagged columns', () => {
     expect(v('SELECT SUBSTR(card_no, 1, 4) FROM cards', 'ROLE_SUPPORT')).toContain('SM-DERIVED-001');
     expect(v('SELECT SUM(balance) FROM accounts', 'ROLE_ANALYST')).toContain('SM-DERIVED-001');
-    expect(v("SELECT LOWER(email) FROM customers WHERE LOWER(email) = LOWER(email)", 'ROLE_ANALYST')).toContain('SM-DERIVED-001');
-    expect(v('WITH t AS (SELECT UPPER(first_name) AS n FROM customers) SELECT n FROM t', 'ROLE_ANALYST')).toContain('SM-DERIVED-001');
+    expect(
+      v('SELECT LOWER(email) FROM customers WHERE LOWER(email) = LOWER(email)', 'ROLE_ANALYST'),
+    ).toContain('SM-DERIVED-001');
+    expect(
+      v('WITH t AS (SELECT UPPER(first_name) AS n FROM customers) SELECT n FROM t', 'ROLE_ANALYST'),
+    ).toContain('SM-DERIVED-001');
     expect(v('SELECT SUM(balance) FROM accounts', 'ROLE_ADMIN')).toEqual([]);
   });
   it('COUNT(*) and untagged aggregates stay allowed', () => {
     expect(v('SELECT segment, COUNT(*) FROM customers GROUP BY segment', 'ROLE_ANALYST')).toEqual([]);
   });
   it('unknown table and ambiguous column are reported, not executed', () => {
-    expect(() => analyzeQuery(parseSql('SELECT x FROM nope'), env('ROLE_ADMIN', 'sqlite', 'ast'))).toThrowError(/Unknown table/);
-    expect(() => analyzeQuery(parseSql('SELECT customer_id FROM customers c JOIN accounts a ON a.customer_id = c.customer_id'), env('ROLE_ADMIN', 'sqlite', 'ast'))).toThrowError(/ambiguous/);
+    expect(() =>
+      analyzeQuery(parseSql('SELECT x FROM nope'), env('ROLE_ADMIN', 'sqlite', 'ast')),
+    ).toThrowError(/Unknown table/);
+    expect(() =>
+      analyzeQuery(
+        parseSql('SELECT customer_id FROM customers c JOIN accounts a ON a.customer_id = c.customer_id'),
+        env('ROLE_ADMIN', 'sqlite', 'ast'),
+      ),
+    ).toThrowError(/ambiguous/);
   });
   it('REVIEW columns are masked fail-closed', () => {
     const r = rewrite('SELECT order_ref FROM settlements', 'ROLE_ANALYST');

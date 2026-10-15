@@ -121,9 +121,7 @@ export function ibanValid(input: string): boolean {
 
 export function makeIban(country: 'GB' | 'DE', rng: Rng): string {
   const bban =
-    country === 'GB'
-      ? rng.pick(['NWBK', 'BARC', 'LOYD', 'HBUK']) + rng.digits(14)
-      : rng.digits(18);
+    country === 'GB' ? rng.pick(['NWBK', 'BARC', 'LOYD', 'HBUK']) + rng.digits(14) : rng.digits(18);
   const check = 98 - mod97(ibanNumeric(`${bban}${country}00`));
   const iban = `${country}${String(check).padStart(2, '0')}${bban}`;
   return iban.replace(/(.{4})/g, '$1 ').trim();

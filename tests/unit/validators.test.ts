@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { createRng } from '../../src/shared/engine/prng';
-import { ibanValid, luhnValid, makeAadhaar, makeIban, makePan, makeSsn, ssnValid, verhoeffValid } from '../../src/shared/engine/validators';
+import {
+  ibanValid,
+  luhnValid,
+  makeAadhaar,
+  makeIban,
+  makePan,
+  makeSsn,
+  ssnValid,
+  verhoeffValid,
+} from '../../src/shared/engine/validators';
 
 describe('validators and generators', () => {
   const rng = createRng(42);

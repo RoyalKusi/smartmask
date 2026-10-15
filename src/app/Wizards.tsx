@@ -1,6 +1,6 @@
 import { Checkbox, Dropdown, Field, Option, Radio, RadioGroup } from '@fluentui/react-components';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { describeError } from '../shared/api/errors';
 import { api } from '../shared/api/client';
 import { DEFAULT_PRINCIPAL } from '../shared/api/identity';
@@ -25,21 +25,41 @@ export function AddBackendWizard() {
   const [host, setHost] = useState('');
   const [database, setDatabase] = useState('');
   const [user, setUser] = useState('');
-  useEffect(() => {
-    if (open) { setName(''); setDialect('postgresql'); setHost(''); setDatabase(''); setUser(''); }
-  }, [open]);
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      setName('');
+      setDialect('postgresql');
+      setHost('');
+      setDatabase('');
+      setUser('');
+    }
+  }
 
   const nameErr = (v: string): string | null =>
-    !/^[a-z][a-z0-9_]{2,30}$/.test(v) ? 'Use 3–31 lowercase letters, digits or underscores, starting with a letter.' : backends?.some((b) => b.id === v) ? 'A backend with this name already exists.' : null;
-  const hostErr = (v: string): string | null => (/^[a-z0-9.-]+:\d{2,5}$|^file:\/.+/i.test(v) ? null : 'Use host:port (for example db.internal:5432) or file:/path/to.db.');
-  const dbErr = (v: string): string | null => (/^[A-Za-z0-9_.-]{1,48}$/.test(v) ? null : 'Enter a database name (letters, digits, _ . -).');
-  const userErr = (v: string): string | null => (/^[A-Za-z0-9_.-]{2,32}$/.test(v) ? null : 'Enter a service user (2–32 characters).');
+    !/^[a-z][a-z0-9_]{2,30}$/.test(v)
+      ? 'Use 3–31 lowercase letters, digits or underscores, starting with a letter.'
+      : backends?.some((b) => b.id === v)
+        ? 'A backend with this name already exists.'
+        : null;
+  const hostErr = (v: string): string | null =>
+    /^[a-z0-9.-]+:\d{2,5}$|^file:\/.+/i.test(v)
+      ? null
+      : 'Use host:port (for example db.internal:5432) or file:/path/to.db.';
+  const dbErr = (v: string): string | null =>
+    /^[A-Za-z0-9_.-]{1,48}$/.test(v) ? null : 'Enter a database name (letters, digits, _ . -).';
+  const userErr = (v: string): string | null =>
+    /^[A-Za-z0-9_.-]{2,32}$/.test(v) ? null : 'Enter a service user (2–32 characters).';
 
   const m = useMutation({
     mutationFn: () => api.addBackend({ label: name, dialect, host }),
     onSuccess: (b) => {
       void qc.invalidateQueries({ queryKey: ['backends'] });
-      notify({ title: `Backend ${b.label} added`, body: 'Registered with 0 tables. Scan it to discover columns.' });
+      notify({
+        title: `Backend ${b.label} added`,
+        body: 'Registered with 0 tables. Scan it to discover columns.',
+      });
       setOpen(false);
       setParams({ conn: b.id });
     },
@@ -60,9 +80,24 @@ export function AddBackendWizard() {
           valid: !nameErr(name),
           content: (
             <div className="sm-stack">
-              <ValidatedField label="Backend name" value={name} onChange={setName} validate={nameErr} hint="Becomes the catalog schema id, e.g. risk_pg." placeholder="risk_pg" />
-              <Field label="Engine" required hint="PostgreSQL uses secure views (Approach A); SQLite and MySQL use AST rewriting (Approach B).">
-                <Dropdown value={{ postgresql: 'PostgreSQL', sqlite: 'SQLite', mysql: 'MySQL' }[dialect]} selectedOptions={[dialect]} onOptionSelect={(_, d) => setDialect(d.optionValue as Dialect)}>
+              <ValidatedField
+                label="Backend name"
+                value={name}
+                onChange={setName}
+                validate={nameErr}
+                hint="Becomes the catalog schema id, e.g. risk_pg."
+                placeholder="risk_pg"
+              />
+              <Field
+                label="Engine"
+                required
+                hint="PostgreSQL uses secure views (Approach A); SQLite and MySQL use AST rewriting (Approach B)."
+              >
+                <Dropdown
+                  value={{ postgresql: 'PostgreSQL', sqlite: 'SQLite', mysql: 'MySQL' }[dialect]}
+                  selectedOptions={[dialect]}
+                  onOptionSelect={(_, d) => setDialect(d.optionValue as Dialect)}
+                >
                   <Option value="postgresql">PostgreSQL</Option>
                   <Option value="sqlite">SQLite</Option>
                   <Option value="mysql">MySQL</Option>
@@ -76,10 +111,30 @@ export function AddBackendWizard() {
           valid: !hostErr(host) && !dbErr(database) && !userErr(user),
           content: (
             <div className="sm-stack">
-              <ValidatedField label="Host" value={host} onChange={setHost} validate={hostErr} placeholder="risk-pg.meridian.internal:5432" />
-              <ValidatedField label="Database" value={database} onChange={setDatabase} validate={dbErr} placeholder="risk" />
-              <ValidatedField label="Service user" value={user} onChange={setUser} validate={userErr} placeholder="smartmask_reader" />
-              <p className="t-caption1 t-secondary" style={{ margin: 0 }}>No password is requested: this prototype never opens a real connection.</p>
+              <ValidatedField
+                label="Host"
+                value={host}
+                onChange={setHost}
+                validate={hostErr}
+                placeholder="risk-pg.meridian.internal:5432"
+              />
+              <ValidatedField
+                label="Database"
+                value={database}
+                onChange={setDatabase}
+                validate={dbErr}
+                placeholder="risk"
+              />
+              <ValidatedField
+                label="Service user"
+                value={user}
+                onChange={setUser}
+                validate={userErr}
+                placeholder="smartmask_reader"
+              />
+              <p className="t-caption1 t-secondary" style={{ margin: 0 }}>
+                No password is requested: this prototype never opens a real connection.
+              </p>
             </div>
           ),
         },
@@ -88,11 +143,21 @@ export function AddBackendWizard() {
           valid: !nameErr(name) && !hostErr(host) && !dbErr(database) && !userErr(user),
           content: (
             <dl className="sm-kv">
-              <dt>Name</dt><dd className="sm-mono">{name}</dd>
-              <dt>Engine</dt><dd>{dialect}</dd>
-              <dt>Approach</dt><dd>{dialect === 'postgresql' ? 'A · per-role secure views' : 'B · AST rewriting'}</dd>
-              <dt>Endpoint</dt><dd className="sm-mono">{host}/{database} as {user}</dd>
-              <dt>Next</dt><dd>The connection is tested, the backend is registered, and a scan is offered. A BACKEND_ADDED event is written to the audit chain.</dd>
+              <dt>Name</dt>
+              <dd className="sm-mono">{name}</dd>
+              <dt>Engine</dt>
+              <dd>{dialect}</dd>
+              <dt>Approach</dt>
+              <dd>{dialect === 'postgresql' ? 'A · per-role secure views' : 'B · AST rewriting'}</dd>
+              <dt>Endpoint</dt>
+              <dd className="sm-mono">
+                {host}/{database} as {user}
+              </dd>
+              <dt>Next</dt>
+              <dd>
+                The connection is tested, the backend is registered, and a scan is offered. A BACKEND_ADDED
+                event is written to the audit chain.
+              </dd>
             </dl>
           ),
         },
@@ -113,25 +178,59 @@ export function OverrideWizard() {
   const [tag, setTag] = useState<Tag>('PII_HIGH');
   const [why, setWhy] = useState('');
   const [ack, setAck] = useState(false);
-  useEffect(() => {
-    if (open) { setMode('TAG'); setTag(rec?.suggestedTag ?? 'PII_HIGH'); setWhy(''); setAck(false); }
-    // Reset only when the wizard opens for a different column.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
-  const whyErr = (v: string): string | null => (v.trim().length >= 12 ? null : 'Explain the decision in at least 12 characters; it is stored in the audit trail.');
+  const [lastId, setLastId] = useState<string | null>(null);
+  if (id !== lastId) {
+    setLastId(id);
+    if (id !== null) {
+      setMode('TAG');
+      setTag(rec?.suggestedTag ?? 'PII_HIGH');
+      setWhy('');
+      setAck(false);
+    }
+  }
+  const whyErr = (v: string): string | null =>
+    v.trim().length >= 12
+      ? null
+      : 'Explain the decision in at least 12 characters; it is stored in the audit trail.';
   const m = useMutation({
-    mutationFn: () => api.decide({ columnId: id as string, action: 'OVERRIDE', mode, ...(mode === 'TAG' ? { tag } : {}), reason: why.trim() }, DEFAULT_PRINCIPAL[roleFromParam(currentRoute().params.get('role'))]),
+    mutationFn: () =>
+      api.decide(
+        {
+          columnId: id as string,
+          action: 'OVERRIDE',
+          mode,
+          ...(mode === 'TAG' ? { tag } : {}),
+          reason: why.trim(),
+        },
+        DEFAULT_PRINCIPAL[roleFromParam(currentRoute().params.get('role'))],
+      ),
     onSuccess: ({ previous }) => {
       void qc.invalidateQueries();
       notify({
         title: `Override applied to ${previous.id}`,
         body: mode === 'CLEAR' ? 'Column is now unmasked for every role.' : `Column is forced to ${tag}.`,
-        undo: () => { void api.undoDecision(previous, DEFAULT_PRINCIPAL.ROLE_ADMIN).then(() => qc.invalidateQueries()); },
+        undo: () => {
+          void api.undoDecision(previous, DEFAULT_PRINCIPAL.ROLE_ADMIN).then(() => qc.invalidateQueries());
+        },
       });
       setId(null);
     },
   });
-  if (!rec) return open ? <Wizard open title="Override column" steps={[{ label: 'Column', valid: false, content: <p>Loading column…</p> }, { label: 'Decision', valid: false, content: null }, { label: 'Confirm', valid: false, content: null }]} finishLabel="Apply" onCancel={() => setId(null)} onFinish={() => undefined} /> : null;
+  if (!rec)
+    return open ? (
+      <Wizard
+        open
+        title="Override column"
+        steps={[
+          { label: 'Column', valid: false, content: <p>Loading column…</p> },
+          { label: 'Decision', valid: false, content: null },
+          { label: 'Confirm', valid: false, content: null },
+        ]}
+        finishLabel="Apply"
+        onCancel={() => setId(null)}
+        onFinish={() => undefined}
+      />
+    ) : null;
   return (
     <Wizard
       open={open}
@@ -147,10 +246,22 @@ export function OverrideWizard() {
           valid: true,
           content: (
             <dl className="sm-kv">
-              <dt>Column</dt><dd className="sm-mono">{rec.backend}.{rec.id}</dd>
-              <dt>Current state</dt><dd><StateChip state={rec.state} /></dd>
-              <dt>Current tag</dt><dd><TagChip tag={rec.tag} /></dd>
-              <dt>Score</dt><dd>S = {rec.s.toFixed(3)} · M = {rec.m.toFixed(2)}</dd>
+              <dt>Column</dt>
+              <dd className="sm-mono">
+                {rec.backend}.{rec.id}
+              </dd>
+              <dt>Current state</dt>
+              <dd>
+                <StateChip state={rec.state} />
+              </dd>
+              <dt>Current tag</dt>
+              <dd>
+                <TagChip tag={rec.tag} />
+              </dd>
+              <dt>Score</dt>
+              <dd>
+                S = {rec.s.toFixed(3)} · M = {rec.m.toFixed(2)}
+              </dd>
             </dl>
           ),
         },
@@ -167,12 +278,27 @@ export function OverrideWizard() {
               </Field>
               {mode === 'TAG' && (
                 <Field label="Tag">
-                  <Dropdown value={tag} selectedOptions={[tag]} onOptionSelect={(_, d) => setTag(d.optionValue as Tag)}>
-                    {TAGS.map((t) => <Option key={t} value={t}>{t}</Option>)}
+                  <Dropdown
+                    value={tag}
+                    selectedOptions={[tag]}
+                    onOptionSelect={(_, d) => setTag(d.optionValue as Tag)}
+                  >
+                    {TAGS.map((t) => (
+                      <Option key={t} value={t}>
+                        {t}
+                      </Option>
+                    ))}
                   </Dropdown>
                 </Field>
               )}
-              <ValidatedField label="Justification" value={why} onChange={setWhy} validate={whyErr} multiline placeholder="Why is this override correct?" />
+              <ValidatedField
+                label="Justification"
+                value={why}
+                onChange={setWhy}
+                validate={whyErr}
+                multiline
+                placeholder="Why is this override correct?"
+              />
             </div>
           ),
         },
@@ -182,11 +308,22 @@ export function OverrideWizard() {
           content: (
             <div className="sm-stack">
               <dl className="sm-kv">
-                <dt>Column</dt><dd className="sm-mono">{rec.id}</dd>
-                <dt>Change</dt><dd>{rec.state} → OVERRIDDEN ({mode === 'CLEAR' ? 'unmasked' : tag})</dd>
-                <dt>Justification</dt><dd>{why}</dd>
+                <dt>Column</dt>
+                <dd className="sm-mono">{rec.id}</dd>
+                <dt>Change</dt>
+                <dd>
+                  {rec.state} → OVERRIDDEN ({mode === 'CLEAR' ? 'unmasked' : tag})
+                </dd>
+                <dt>Justification</dt>
+                <dd>{why}</dd>
               </dl>
-              {mode === 'CLEAR' && <Checkbox checked={ack} onChange={(_, d) => setAck(!!d.checked)} label="I understand this exposes the column in plaintext to Support and Analyst." />}
+              {mode === 'CLEAR' && (
+                <Checkbox
+                  checked={ack}
+                  onChange={(_, d) => setAck(!!d.checked)}
+                  label="I understand this exposes the column in plaintext to Support and Analyst."
+                />
+              )}
             </div>
           ),
         },
@@ -203,11 +340,20 @@ export function ExportWizard() {
   const [summary, setSummary] = useState(true);
   const [busy, setBusy] = useState(false);
   const payload = exportOpen && exportProvider ? exportProvider() : null;
-  useEffect(() => {
-    if (exportOpen) { setFormat('both'); setName(''); setSummary(true); }
-  }, [exportOpen]);
+  const [wasOpen, setWasOpen] = useState(exportOpen);
+  if (exportOpen !== wasOpen) {
+    setWasOpen(exportOpen);
+    if (exportOpen) {
+      setFormat('both');
+      setName('');
+      setSummary(true);
+    }
+  }
   const base = (name || payload?.name || 'report').replace(/[^a-z0-9_-]+/gi, '-').toLowerCase();
-  const nameErr = (v: string): string | null => (v === '' || /^[A-Za-z0-9 _-]{3,40}$/.test(v) ? null : 'Use 3–40 letters, digits, spaces, - or _. Leave blank for the default.');
+  const nameErr = (v: string): string | null =>
+    v === '' || /^[A-Za-z0-9 _-]{3,40}$/.test(v)
+      ? null
+      : 'Use 3–40 letters, digits, spaces, - or _. Leave blank for the default.';
 
   const finish = async (): Promise<void> => {
     if (!payload) return;
@@ -221,12 +367,20 @@ export function ExportWizard() {
       note: 'Synthetic data, simulated engine. Latency figures are simulated, not measured.',
       ...(summary ? { summary: payload.summary ?? {} } : {}),
     };
-    if (format === 'json' || format === 'both') download(`${base}.json`, 'application/json', JSON.stringify({ ...meta, rows: payload.rows }, null, 2));
+    if (format === 'json' || format === 'both')
+      download(`${base}.json`, 'application/json', JSON.stringify({ ...meta, rows: payload.rows }, null, 2));
     if (format === 'csv' || format === 'both') download(`${base}.csv`, 'text/csv', toCsv(payload.rows));
-    await api.logExport(payload.name, format.toUpperCase(), DEFAULT_PRINCIPAL[roleFromParam(route.params.get('role'))]);
+    await api.logExport(
+      payload.name,
+      format.toUpperCase(),
+      DEFAULT_PRINCIPAL[roleFromParam(route.params.get('role'))],
+    );
     setBusy(false);
     setExportOpen(false);
-    notify({ title: 'Report exported', body: `${payload.rows.length} row(s) as ${format === 'both' ? 'JSON and CSV' : format.toUpperCase()}.` });
+    notify({
+      title: 'Report exported',
+      body: `${payload.rows.length} row(s) as ${format === 'both' ? 'JSON and CSV' : format.toUpperCase()}.`,
+    });
   };
 
   return (
@@ -243,7 +397,16 @@ export function ExportWizard() {
           valid: !!payload,
           content: (
             <div className="sm-stack">
-              <p style={{ margin: 0 }}>{payload ? <>Exporting <strong>{payload.rows.length}</strong> row(s) from the current view with its filters and sort.</> : 'This view has nothing to export yet.'}</p>
+              <p style={{ margin: 0 }}>
+                {payload ? (
+                  <>
+                    Exporting <strong>{payload.rows.length}</strong> row(s) from the current view with its
+                    filters and sort.
+                  </>
+                ) : (
+                  'This view has nothing to export yet.'
+                )}
+              </p>
               <Field label="Format">
                 <RadioGroup value={format} onChange={(_, d) => setFormat(d.value as typeof format)}>
                   <Radio value="both" label="JSON and CSV" />
@@ -259,8 +422,19 @@ export function ExportWizard() {
           valid: !nameErr(name),
           content: (
             <div className="sm-stack">
-              <ValidatedField label="File name" value={name} onChange={setName} validate={nameErr} required={false} placeholder={payload?.name ?? 'report'} />
-              <Checkbox checked={summary} onChange={(_, d) => setSummary(!!d.checked)} label="Include summary and filter metadata in JSON" />
+              <ValidatedField
+                label="File name"
+                value={name}
+                onChange={setName}
+                validate={nameErr}
+                required={false}
+                placeholder={payload?.name ?? 'report'}
+              />
+              <Checkbox
+                checked={summary}
+                onChange={(_, d) => setSummary(!!d.checked)}
+                label="Include summary and filter metadata in JSON"
+              />
             </div>
           ),
         },
@@ -269,10 +443,20 @@ export function ExportWizard() {
           valid: !!payload,
           content: (
             <dl className="sm-kv">
-              <dt>Files</dt><dd className="sm-mono">{format !== 'csv' && `${base}.json `}{format !== 'json' && `${base}.csv`}</dd>
-              <dt>Rows</dt><dd>{payload?.rows.length ?? 0}</dd>
-              <dt>Role</dt><dd>{roleFromParam(currentRoute().params.get('role')).replace('ROLE_', '')}: exports contain only what this view shows</dd>
-              <dt>Audit</dt><dd>An EXPORT event is written to the hash chain.</dd>
+              <dt>Files</dt>
+              <dd className="sm-mono">
+                {format !== 'csv' && `${base}.json `}
+                {format !== 'json' && `${base}.csv`}
+              </dd>
+              <dt>Rows</dt>
+              <dd>{payload?.rows.length ?? 0}</dd>
+              <dt>Role</dt>
+              <dd>
+                {roleFromParam(currentRoute().params.get('role')).replace('ROLE_', '')}: exports contain only
+                what this view shows
+              </dd>
+              <dt>Audit</dt>
+              <dd>An EXPORT event is written to the hash chain.</dd>
             </dl>
           ),
         },

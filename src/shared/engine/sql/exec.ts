@@ -62,7 +62,10 @@ function cmp(a: Value, b: Value): number {
 }
 
 function likeToRegex(pattern: string, ci: boolean): RegExp {
-  const src = pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/%/g, '.*').replace(/_/g, '.');
+  const src = pattern
+    .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    .replace(/%/g, '.*')
+    .replace(/_/g, '.');
   return new RegExp(`^${src}$`, ci ? 'is' : 's');
 }
 
@@ -79,7 +82,11 @@ function hasAgg(e: Expr): boolean {
     case 'isnull':
       return hasAgg(e.e);
     case 'case':
-      return (e.operand ? hasAgg(e.operand) : false) || e.whens.some((w) => hasAgg(w.c) || hasAgg(w.t)) || (e.else ? hasAgg(e.else) : false);
+      return (
+        (e.operand ? hasAgg(e.operand) : false) ||
+        e.whens.some((w) => hasAgg(w.c) || hasAgg(w.t)) ||
+        (e.else ? hasAgg(e.else) : false)
+      );
     case 'between':
       return hasAgg(e.e) || hasAgg(e.lo) || hasAgg(e.hi);
     case 'in':
@@ -110,7 +117,12 @@ class Executor {
     return this.run(q, ctx.scope, ctx.env, ctx.row);
   }
 
-  run(q: Query, outerScope: Scope = new Map(), outerEnv: Env | null = null, outerRow: readonly Value[] | null = null): RowSet {
+  run(
+    q: Query,
+    outerScope: Scope = new Map(),
+    outerEnv: Env | null = null,
+    outerRow: readonly Value[] | null = null,
+  ): RowSet {
     const scope: Scope = new Map(outerScope);
     for (const c of q.ctes) {
       const rs = this.run(c.q, scope);
@@ -241,7 +253,14 @@ class Executor {
           outExprs.push({ k: 'col', table: c.alias, name: c.name });
         }
       } else {
-        outCols.push(it.alias ?? (it.expr.k === 'col' ? it.expr.name : it.expr.k === 'fn' ? it.expr.name.toLowerCase() : `col${outCols.length + 1}`));
+        outCols.push(
+          it.alias ??
+            (it.expr.k === 'col'
+              ? it.expr.name
+              : it.expr.k === 'fn'
+                ? it.expr.name.toLowerCase()
+                : `col${outCols.length + 1}`),
+        );
         outExprs.push(it.expr);
       }
     }
@@ -370,7 +389,8 @@ class Executor {
         const op = e.operand ? this.eval(e.operand, ctx) : null;
         for (const w of e.whens) {
           const c = this.eval(w.c, ctx);
-          if (e.operand ? op !== null && c !== null && cmp(op, c) === 0 : truthy(c)) return this.eval(w.t, ctx);
+          if (e.operand ? op !== null && c !== null && cmp(op, c) === 0 : truthy(c))
+            return this.eval(w.t, ctx);
         }
         return e.else ? this.eval(e.else, ctx) : null;
       }
@@ -405,21 +425,36 @@ class Executor {
     const r = this.eval(e.r, ctx);
     if (l === null || r === null) return null;
     switch (e.op) {
-      case '=': return cmp(l, r) === 0;
-      case '<>': return cmp(l, r) !== 0;
-      case '<': return cmp(l, r) < 0;
-      case '>': return cmp(l, r) > 0;
-      case '<=': return cmp(l, r) <= 0;
-      case '>=': return cmp(l, r) >= 0;
-      case 'LIKE': return likeToRegex(String(r), false).test(String(l));
-      case 'ILIKE': return likeToRegex(String(r), true).test(String(l));
-      case '+': return Number(l) + Number(r);
-      case '-': return Number(l) - Number(r);
-      case '*': return Number(l) * Number(r);
-      case '/': return Number(r) === 0 ? null : Number(l) / Number(r);
-      case '%': return Number(r) === 0 ? null : Number(l) % Number(r);
-      case '||': return String(l) + String(r);
-      default: throw new EngineError('SM-PARSE-001', `Unsupported operator ${e.op}.`);
+      case '=':
+        return cmp(l, r) === 0;
+      case '<>':
+        return cmp(l, r) !== 0;
+      case '<':
+        return cmp(l, r) < 0;
+      case '>':
+        return cmp(l, r) > 0;
+      case '<=':
+        return cmp(l, r) <= 0;
+      case '>=':
+        return cmp(l, r) >= 0;
+      case 'LIKE':
+        return likeToRegex(String(r), false).test(String(l));
+      case 'ILIKE':
+        return likeToRegex(String(r), true).test(String(l));
+      case '+':
+        return Number(l) + Number(r);
+      case '-':
+        return Number(l) - Number(r);
+      case '*':
+        return Number(l) * Number(r);
+      case '/':
+        return Number(r) === 0 ? null : Number(l) / Number(r);
+      case '%':
+        return Number(r) === 0 ? null : Number(l) % Number(r);
+      case '||':
+        return String(l) + String(r);
+      default:
+        throw new EngineError('SM-PARSE-001', `Unsupported operator ${e.op}.`);
     }
   }
 
@@ -428,37 +463,56 @@ class Executor {
       const grp = ctx.group ?? [];
       const arg = e.args[0];
       if (e.name === 'COUNT' && (!arg || arg.k === 'star')) return grp.length;
-      let vals = grp.map((r) => this.eval(arg as Expr, new Ctx(ctx.env, r, null, ctx.scope))).filter((v) => v !== null);
+      let vals = grp
+        .map((r) => this.eval(arg as Expr, new Ctx(ctx.env, r, null, ctx.scope)))
+        .filter((v) => v !== null);
       if (e.distinct) vals = [...new Map(vals.map((v) => [String(v), v])).values()];
       switch (e.name) {
-        case 'COUNT': return vals.length;
-        case 'SUM': return vals.length ? vals.reduce<number>((a, v) => a + Number(v), 0) : null;
-        case 'AVG': return vals.length ? vals.reduce<number>((a, v) => a + Number(v), 0) / vals.length : null;
-        case 'MIN': return vals.length ? vals.reduce((a, v) => (cmp(v as Value, a as Value) < 0 ? v : a)) : null;
-        default: return vals.length ? vals.reduce((a, v) => (cmp(v as Value, a as Value) > 0 ? v : a)) : null;
+        case 'COUNT':
+          return vals.length;
+        case 'SUM':
+          return vals.length ? vals.reduce<number>((a, v) => a + Number(v), 0) : null;
+        case 'AVG':
+          return vals.length ? vals.reduce<number>((a, v) => a + Number(v), 0) / vals.length : null;
+        case 'MIN':
+          return vals.length ? vals.reduce((a, v) => (cmp(v as Value, a as Value) < 0 ? v : a)) : null;
+        default:
+          return vals.length ? vals.reduce((a, v) => (cmp(v as Value, a as Value) > 0 ? v : a)) : null;
       }
     }
     const a = e.args.map((x) => this.eval(x, ctx));
     const s = (i: number): string => String(a[i] ?? '');
     switch (e.name) {
-      case 'UPPER': return a[0] === null ? null : s(0).toUpperCase();
-      case 'LOWER': return a[0] === null ? null : s(0).toLowerCase();
+      case 'UPPER':
+        return a[0] === null ? null : s(0).toUpperCase();
+      case 'LOWER':
+        return a[0] === null ? null : s(0).toLowerCase();
       case 'LENGTH':
-      case 'LEN': return a[0] === null ? null : Array.from(s(0)).length;
-      case 'TRIM': return a[0] === null ? null : s(0).trim();
+      case 'LEN':
+        return a[0] === null ? null : Array.from(s(0)).length;
+      case 'TRIM':
+        return a[0] === null ? null : s(0).trim();
       case 'SUBSTR':
       case 'SUBSTRING': {
         if (a[0] === null) return null;
         const start = Math.max(1, Number(a[1] ?? 1));
         const chars = Array.from(s(0));
-        return a[2] === undefined ? chars.slice(start - 1).join('') : chars.slice(start - 1, start - 1 + Number(a[2])).join('');
+        return a[2] === undefined
+          ? chars.slice(start - 1).join('')
+          : chars.slice(start - 1, start - 1 + Number(a[2])).join('');
       }
-      case 'COALESCE': return a.find((v) => v !== null) ?? null;
-      case 'ROUND': return a[0] === null ? null : Number(Number(a[0]).toFixed(Number(a[1] ?? 0)));
-      case 'ABS': return a[0] === null ? null : Math.abs(Number(a[0]));
-      case 'CONCAT': return a.map((v) => (v === null ? '' : String(v))).join('');
-      case 'REPLACE': return a[0] === null ? null : s(0).split(s(1)).join(s(2));
-      case 'DATE': return a[0] === null ? null : s(0).slice(0, 10);
+      case 'COALESCE':
+        return a.find((v) => v !== null) ?? null;
+      case 'ROUND':
+        return a[0] === null ? null : Number(Number(a[0]).toFixed(Number(a[1] ?? 0)));
+      case 'ABS':
+        return a[0] === null ? null : Math.abs(Number(a[0]));
+      case 'CONCAT':
+        return a.map((v) => (v === null ? '' : String(v))).join('');
+      case 'REPLACE':
+        return a[0] === null ? null : s(0).split(s(1)).join(s(2));
+      case 'DATE':
+        return a[0] === null ? null : s(0).slice(0, 10);
       default:
         throw new EngineError('SM-PARSE-001', `Unsupported function ${e.name}().`);
     }

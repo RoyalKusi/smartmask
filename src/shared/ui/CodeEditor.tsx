@@ -5,9 +5,17 @@ import { yaml } from '@codemirror/lang-yaml';
 import { HighlightStyle, bracketMatching, syntaxHighlighting } from '@codemirror/language';
 import { forceLinting, linter, lintGutter, type Diagnostic } from '@codemirror/lint';
 import { EditorState, type Extension } from '@codemirror/state';
-import { EditorView, highlightActiveLine, highlightActiveLineGutter, keymap, lineNumbers, placeholder } from '@codemirror/view';
+import {
+  EditorView,
+  highlightActiveLine,
+  highlightActiveLineGutter,
+  keymap,
+  lineNumbers,
+  placeholder,
+} from '@codemirror/view';
 import { tags as t } from '@lezer/highlight';
 import { useEffect, useRef } from 'react';
+import { useLatest } from './useLatest';
 import type { Dialect } from '../engine/types';
 
 /** Highlight classes map to --sm-* tokens in styles.css, so both themes stay AA without literals here. */
@@ -35,23 +43,49 @@ export interface EditorProps {
   placeholderText?: string;
 }
 
-export function CodeEditor({ value, onChange, language, dialect, ariaLabel, height = 220, readOnly, diagnostics, lintKey, onRun, placeholderText }: EditorProps) {
+export function CodeEditor({
+  value,
+  onChange,
+  language,
+  dialect,
+  ariaLabel,
+  height = 220,
+  readOnly,
+  diagnostics,
+  lintKey,
+  onRun,
+  placeholderText,
+}: EditorProps) {
   const host = useRef<HTMLDivElement>(null);
   const view = useRef<EditorView | null>(null);
-  const cb = useRef({ onChange, diagnostics, onRun });
-  cb.current = { onChange, diagnostics, onRun };
+  const cb = useLatest({ onChange, diagnostics, onRun });
 
   useEffect(() => {
     if (!host.current) return undefined;
     const lang: Extension =
-      language === 'yaml' ? yaml() : sql({ dialect: dialect === 'mysql' ? MySQL : dialect === 'sqlite' ? SQLite : PostgreSQL });
+      language === 'yaml'
+        ? yaml()
+        : sql({ dialect: dialect === 'mysql' ? MySQL : dialect === 'sqlite' ? SQLite : PostgreSQL });
     const state = EditorState.create({
       doc: value,
       extensions: [
-        lineNumbers(), highlightActiveLine(), highlightActiveLineGutter(), history(), bracketMatching(), closeBrackets(),
+        lineNumbers(),
+        highlightActiveLine(),
+        highlightActiveLineGutter(),
+        history(),
+        bracketMatching(),
+        closeBrackets(),
         keymap.of([
-          { key: 'Mod-Enter', run: () => { cb.current.onRun?.(); return true; } },
-          indentWithTab, ...defaultKeymap, ...historyKeymap,
+          {
+            key: 'Mod-Enter',
+            run: () => {
+              cb.current.onRun?.();
+              return true;
+            },
+          },
+          indentWithTab,
+          ...defaultKeymap,
+          ...historyKeymap,
         ]),
         lang,
         syntaxHighlighting(highlight),
@@ -64,7 +98,7 @@ export function CodeEditor({ value, onChange, language, dialect, ariaLabel, heig
         EditorView.updateListener.of((u) => {
           if (u.docChanged) cb.current.onChange?.(u.state.doc.toString());
         }),
-        EditorView.theme({ '&': { height: typeof height === 'number' ? `${height}px` : height }, '.cm-scroller': { overflow: 'auto' } }),
+        EditorView.theme({ '&': { minHeight: typeof height === 'number' ? `${height}px` : height } }),
       ],
     });
     view.current = new EditorView({ state, parent: host.current });
@@ -78,7 +112,8 @@ export function CodeEditor({ value, onChange, language, dialect, ariaLabel, heig
 
   useEffect(() => {
     const v = view.current;
-    if (v && v.state.doc.toString() !== value) v.dispatch({ changes: { from: 0, to: v.state.doc.length, insert: value } });
+    if (v && v.state.doc.toString() !== value)
+      v.dispatch({ changes: { from: 0, to: v.state.doc.length, insert: value } });
   }, [value]);
 
   useEffect(() => {

@@ -1,9 +1,11 @@
 import { createRng, type Rng } from './prng';
 
-type TreeNode = { leaf: true; size: number } | { leaf: false; feature: number; split: number; l: TreeNode; r: TreeNode };
+type TreeNode =
+  { leaf: true; size: number } | { leaf: false; feature: number; split: number; l: TreeNode; r: TreeNode };
 
 const EULER = 0.5772156649;
-const c = (n: number): number => (n <= 1 ? 0 : n === 2 ? 1 : 2 * (Math.log(n - 1) + EULER) - (2 * (n - 1)) / n);
+const c = (n: number): number =>
+  n <= 1 ? 0 : n === 2 ? 1 : 2 * (Math.log(n - 1) + EULER) - (2 * (n - 1)) / n;
 
 function build(rows: number[][], depth: number, limit: number, rng: Rng): TreeNode {
   if (depth >= limit || rows.length <= 1) return { leaf: true, size: rows.length };
@@ -23,8 +25,18 @@ function build(rows: number[][], depth: number, limit: number, rng: Rng): TreeNo
         leaf: false,
         feature: f,
         split,
-        l: build(rows.filter((r) => (r[f] as number) < split), depth + 1, limit, rng),
-        r: build(rows.filter((r) => (r[f] as number) >= split), depth + 1, limit, rng),
+        l: build(
+          rows.filter((r) => (r[f] as number) < split),
+          depth + 1,
+          limit,
+          rng,
+        ),
+        r: build(
+          rows.filter((r) => (r[f] as number) >= split),
+          depth + 1,
+          limit,
+          rng,
+        ),
       };
     }
   }
@@ -41,7 +53,10 @@ export interface IsolationForest {
 }
 
 /** Isolation Forest (Liu et al.). Scores near 1 are anomalous, near 0.5 are ordinary. */
-export function trainIsolationForest(data: number[][], opts: { trees?: number; sample?: number; seed?: number } = {}): IsolationForest {
+export function trainIsolationForest(
+  data: number[][],
+  opts: { trees?: number; sample?: number; seed?: number } = {},
+): IsolationForest {
   const rng = createRng(opts.seed ?? 7);
   const trees = opts.trees ?? 100;
   const psi = Math.min(opts.sample ?? 256, data.length);

@@ -1,10 +1,30 @@
 import { describe, expect, it } from 'vitest';
-import { GENESIS_HASH, sealEvent, tamper, verifyChain, type AuditBody, type AuditEvent } from '../../src/shared/engine/audit';
+import {
+  GENESIS_HASH,
+  sealEvent,
+  tamper,
+  verifyChain,
+  type AuditBody,
+  type AuditEvent,
+} from '../../src/shared/engine/audit';
 
 const body = (i: number): AuditBody => ({
-  id: i, event_type: 'QUERY', timestamp: `2026-10-15T12:00:${String(i).padStart(2, '0')}.000Z`, principal: 'p.iyer', requesting_role: 'ROLE_SUPPORT', backend: 'core_pg',
-  query_hash: `h${i}`, columns_accessed: ['cards.card_no'], masking_applied: [{ column: 'cards.card_no', function: 'PARTIAL_KEEP' }], execution_time_ms: 1.5, rows_returned: 1,
-  stages: null, outcome: 'ALLOWED', code: null, detail: 'x', policy_version: 7,
+  id: i,
+  event_type: 'QUERY',
+  timestamp: `2026-10-15T12:00:${String(i).padStart(2, '0')}.000Z`,
+  principal: 'p.iyer',
+  requesting_role: 'ROLE_SUPPORT',
+  backend: 'core_pg',
+  query_hash: `h${i}`,
+  columns_accessed: ['cards.card_no'],
+  masking_applied: [{ column: 'cards.card_no', function: 'PARTIAL_KEEP' }],
+  execution_time_ms: 1.5,
+  rows_returned: 1,
+  stages: null,
+  outcome: 'ALLOWED',
+  code: null,
+  detail: 'x',
+  policy_version: 7,
 });
 
 function chain(n: number): AuditEvent[] {

@@ -9,7 +9,10 @@ export function mean(xs: readonly number[]): number {
 }
 
 export function median(xs: readonly number[]): number {
-  return percentile([...xs].sort((a, b) => a - b), 50);
+  return percentile(
+    [...xs].sort((a, b) => a - b),
+    50,
+  );
 }
 
 export function stddev(xs: readonly number[]): number {

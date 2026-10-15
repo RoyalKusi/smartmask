@@ -12,7 +12,8 @@ describe('seeded audit log, telemetry and anomalies', async () => {
   it('has 8,000 events with an intact SHA-256 chain, ordered by time', async () => {
     expect(events).toHaveLength(AUDIT_TOTAL);
     expect((await verifyChain(events)).ok).toBe(true);
-    for (let i = 1; i < events.length; i++) expect(events[i]!.timestamp >= events[i - 1]!.timestamp).toBe(true);
+    for (let i = 1; i < events.length; i++)
+      expect(events[i]!.timestamp >= events[i - 1]!.timestamp).toBe(true);
     expect(events[0]).toHaveProperty('query_hash');
     expect(events[0]).toHaveProperty('requesting_role');
     expect(events[0]).toHaveProperty('columns_accessed');
@@ -24,7 +25,9 @@ describe('seeded audit log, telemetry and anomalies', async () => {
     expect(again[4000]!.event_hash).toBe(events[4000]!.event_hash);
   });
   it('contains the injected probe: 40 denied card_no probes by an Analyst, then an eleven-column sweep', () => {
-    const probe = events.filter((e) => e.principal === INJECTED[0]!.principal && e.timestamp.startsWith('2026-10-12T02:'));
+    const probe = events.filter(
+      (e) => e.principal === INJECTED[0]!.principal && e.timestamp.startsWith('2026-10-12T02:'),
+    );
     expect(probe.filter((e) => e.code === 'SM-PRED-001')).toHaveLength(40);
     expect(probe.filter((e) => e.outcome === 'ALLOWED' && e.detail.includes('sweep'))).toHaveLength(11);
   });
@@ -47,7 +50,8 @@ describe('seeded audit log, telemetry and anomalies', async () => {
   it('the isolation forest surfaces all three injected anomalies', () => {
     const tagged = new Set(catalog.filter((r) => r.state !== 'CLEAR').map((r) => r.id));
     const alerts = buildAnomalies(events, tagged);
-    for (const inj of INJECTED) expect(alerts.some((a) => a.principal === inj.principal && a.score > 0.65)).toBe(true);
+    for (const inj of INJECTED)
+      expect(alerts.some((a) => a.principal === inj.principal && a.score > 0.65)).toBe(true);
     expect(catalogMap.size).toBeGreaterThan(0);
   });
 }, 60000);

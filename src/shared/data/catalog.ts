@@ -36,7 +36,16 @@ export function scanTable(spec: TableSpec, scannedAt: string): ColumnRecord[] {
       emptyTableFloor: r.emptyTableFloor,
       shapes: shapeHistogram(values),
       mlContributions: r.mlContributions,
-      history: [{ at: scannedAt, by: 'scanner', action: 'SCAN', from: null, to: r.state, reason: `S=${r.s.toFixed(3)} M=${r.m.toFixed(2)}` }],
+      history: [
+        {
+          at: scannedAt,
+          by: 'scanner',
+          action: 'SCAN',
+          from: null,
+          to: r.state,
+          reason: `S=${r.s.toFixed(3)} M=${r.m.toFixed(2)}`,
+        },
+      ],
       scannedAt,
     };
   });
@@ -49,7 +58,6 @@ export function scanBackend(backend: BackendId, scannedAt: string): ColumnRecord
 export function scanAll(scannedAt: string): ColumnRecord[] {
   return BACKENDS.flatMap((b) => scanBackend(b.id, scannedAt));
 }
-
 
 export { effectiveTag } from './catalogTypes';
 export type { ColumnOverride, ColumnRecord, Decision } from './catalogTypes';

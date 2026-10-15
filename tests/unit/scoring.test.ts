@@ -1,6 +1,13 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { THRESH_ML, combineScore, nameScore, scoreColumn, stateFromScore, tokenize } from '../../src/shared/engine/scoring';
+import {
+  THRESH_ML,
+  combineScore,
+  nameScore,
+  scoreColumn,
+  stateFromScore,
+  tokenize,
+} from '../../src/shared/engine/scoring';
 import { catalogMap } from './helpers';
 
 describe('scoring formula', () => {
@@ -19,14 +26,18 @@ describe('scoring formula', () => {
     expect(stateFromScore(0.1, THRESH_ML)).toBe('ENFORCED_ML');
     expect(stateFromScore(0.55, 0.9)).toBe('ENFORCED_ML');
     fc.assert(
-      fc.property(fc.double({ min: 0, max: 1, noNaN: true }), fc.double({ min: 0, max: 1, noNaN: true }), (s, m) => {
-        const withMl = stateFromScore(s, m);
-        const without = stateFromScore(s, 0);
-        // The classifier can only move a column towards masking.
-        if (without === 'ENFORCED') expect(withMl).toBe('ENFORCED');
-        if (without === 'REVIEW') expect(['REVIEW', 'ENFORCED_ML']).toContain(withMl);
-        if (without === 'CLEAR') expect(['CLEAR', 'ENFORCED_ML']).toContain(withMl);
-      }),
+      fc.property(
+        fc.double({ min: 0, max: 1, noNaN: true }),
+        fc.double({ min: 0, max: 1, noNaN: true }),
+        (s, m) => {
+          const withMl = stateFromScore(s, m);
+          const without = stateFromScore(s, 0);
+          // The classifier can only move a column towards masking.
+          if (without === 'ENFORCED') expect(withMl).toBe('ENFORCED');
+          if (without === 'REVIEW') expect(['REVIEW', 'ENFORCED_ML']).toContain(withMl);
+          if (without === 'CLEAR') expect(['CLEAR', 'ENFORCED_ML']).toContain(withMl);
+        },
+      ),
     );
   });
   it('tokenises camelCase, snake_case and digits', () => {

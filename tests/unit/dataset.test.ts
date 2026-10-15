@@ -42,7 +42,7 @@ describe('synthetic dataset', () => {
     expect(cu.rows.some((r) => r[col('phone')] === null)).toBe(true);
     expect(cu.rows.some((r) => r[col('address_line')] === '')).toBe(true);
     expect(cu.rows.some((r) => String(r[col('email')]).includes('+'))).toBe(true);
-    expect(cu.rows.some((r) => /[^\x00-\x7f]/.test(String(r[col('first_name')])))).toBe(true);
+    expect(cu.rows.some((r) => /\P{ASCII}/u.test(String(r[col('first_name')])))).toBe(true);
     const ssn = new Set(cu.rows.map((r) => r[col('ssn')]));
     const kyc = dataset.get('kyc_documents')!;
     expect(kyc.rows.slice(0, 50).every((r) => ssn.has(r[kyc.columns.indexOf('ssn')] as string))).toBe(true);

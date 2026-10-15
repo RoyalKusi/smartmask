@@ -1,7 +1,17 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { open, waitForData } from './helpers';
 
-const VIEWS = ['overview', 'discovery', 'review', 'policy', 'workbench', 'verification', 'audit', 'performance', 'anomalies'] as const;
+const VIEWS = [
+  'overview',
+  'discovery',
+  'review',
+  'policy',
+  'workbench',
+  'verification',
+  'audit',
+  'performance',
+  'anomalies',
+] as const;
 
 test.describe('adaptive layout', () => {
   test('compact (<640 px): navigation is an overlay blade and tables become card lists', async ({ page }) => {
@@ -28,11 +38,17 @@ test.describe('adaptive layout', () => {
     await expect(page.getByRole('link', { name: 'Discovery' })).toBeVisible();
   });
 
-  test('large (>=1008 px): expanded 280 px blade, collapses to a 48 px rail and remembers it', async ({ page }) => {
+  test('large (>=1008 px): expanded 280 px blade, collapses to a 48 px rail and remembers it', async ({
+    page,
+  }) => {
     await open(page, 'overview');
-    expect((await page.getByRole('navigation', { name: 'Primary' }).boundingBox())!.width).toBeGreaterThan(270);
+    expect((await page.getByRole('navigation', { name: 'Primary' }).boundingBox())!.width).toBeGreaterThan(
+      270,
+    );
     await page.getByRole('button', { name: 'Collapse navigation' }).click();
-    await expect.poll(async () => (await page.getByRole('navigation', { name: 'Primary' }).boundingBox())!.width).toBeLessThan(60);
+    await expect
+      .poll(async () => (await page.getByRole('navigation', { name: 'Primary' }).boundingBox())!.width)
+      .toBeLessThan(60);
     await page.reload();
     await expect(page.locator('h1')).toBeVisible();
     expect((await page.getByRole('navigation', { name: 'Primary' }).boundingBox())!.width).toBeLessThan(60);
@@ -44,8 +60,13 @@ test.describe('adaptive layout', () => {
       await open(page, view);
       await waitForData(page);
       await page.waitForTimeout(500);
-      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-      const main = await page.evaluate(() => { const m = document.querySelector('.sm-main') as HTMLElement; return m.scrollWidth - m.clientWidth; });
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      );
+      const main = await page.evaluate(() => {
+        const m = document.querySelector('.sm-main') as HTMLElement;
+        return m.scrollWidth - m.clientWidth;
+      });
       expect(overflow).toBeLessThanOrEqual(0);
       expect(main).toBeLessThanOrEqual(1);
     });
@@ -53,7 +74,9 @@ test.describe('adaptive layout', () => {
 });
 
 test.describe('keyboard operation', () => {
-  test('data table: arrows move, Space selects, Enter opens the drawer, focus returns on close', async ({ page }) => {
+  test('data table: arrows move, Space selects, Enter opens the drawer, focus returns on close', async ({
+    page,
+  }) => {
     await open(page, 'discovery');
     await waitForData(page);
     const grid = page.getByRole('grid', { name: 'Discovered columns' });
@@ -65,7 +88,7 @@ test.describe('keyboard operation', () => {
     await page.keyboard.press('Enter');
     const drawer = page.getByRole('dialog', { name: 'Details' });
     await expect(drawer).toBeVisible();
-    await expect(page).toHaveURL(/open=column:customers\.last_name/);
+    await expect.poll(() => decodeURIComponent(page.url())).toContain('open=column:customers.last_name');
     await drawer.getByRole('tab', { name: 'Lineage' }).click();
     await expect(drawer).toContainText('Scanner');
     await drawer.getByRole('tab', { name: 'History' }).click();
@@ -85,16 +108,30 @@ test.describe('keyboard operation', () => {
     await expect(opener).toBeFocused();
   });
 
+  test('columns can be resized by dragging the header handle', async ({ page }) => {
+    await open(page, 'discovery');
+    await waitForData(page);
+    const header = page.getByRole('columnheader').filter({ hasText: 'Family' });
+    const before = (await header.boundingBox())!.width;
+    const handle = page.getByRole('separator', { name: 'Resize Family' });
+    const box = (await handle.boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + 90, box.y + box.height / 2, { steps: 6 });
+    await page.mouse.up();
+    await expect.poll(async () => (await header.boundingBox())!.width).toBeGreaterThan(before + 40);
+  });
+
   test('column header menu sorts and filters', async ({ page }) => {
     await open(page, 'discovery');
     await waitForData(page);
     await page.getByRole('button', { name: 'Score S column menu' }).click();
     await page.getByRole('menuitem', { name: 'Sort descending' }).click();
-    await expect(page).toHaveURL(/sort=s:desc/);
+    await expect.poll(() => decodeURIComponent(page.url())).toContain('sort=s:desc');
     await page.getByRole('button', { name: 'State column menu' }).click();
     await page.getByRole('menuitemcheckbox', { name: 'REVIEW' }).click();
     await page.keyboard.press('Escape');
-    await expect(page).toHaveURL(/state=REVIEW/);
+    await expect.poll(() => decodeURIComponent(page.url())).toContain('state=REVIEW');
     await expect(page.getByRole('grid', { name: 'Discovered columns' })).toContainText('order_ref');
   });
 });

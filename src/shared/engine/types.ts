@@ -3,7 +3,13 @@ export const ROLES: readonly Role[] = ['ROLE_ADMIN', 'ROLE_SUPPORT', 'ROLE_ANALY
 export type Tag = 'PII_HIGH' | 'FINANCIAL_CONFIDENTIAL' | 'PII_MEDIUM';
 export const TAGS: readonly Tag[] = ['PII_HIGH', 'FINANCIAL_CONFIDENTIAL', 'PII_MEDIUM'];
 export type ColumnState = 'ENFORCED' | 'ENFORCED_ML' | 'REVIEW' | 'CLEAR' | 'OVERRIDDEN';
-export const COLUMN_STATES: readonly ColumnState[] = ['ENFORCED', 'ENFORCED_ML', 'REVIEW', 'CLEAR', 'OVERRIDDEN'];
+export const COLUMN_STATES: readonly ColumnState[] = [
+  'ENFORCED',
+  'ENFORCED_ML',
+  'REVIEW',
+  'CLEAR',
+  'OVERRIDDEN',
+];
 export type Dialect = 'postgresql' | 'sqlite' | 'mysql';
 export type BackendId = 'core_pg' | 'ledger_lite' | 'crm_mysql' | (string & {});
 export type Value = string | number | boolean | null;

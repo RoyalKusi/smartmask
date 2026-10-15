@@ -1,4 +1,14 @@
-import { createContext, lazy, Suspense, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  lazy,
+  Suspense,
+  useCallback,
+  useContext,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import type { NotifyOptions } from './notifyTypes';
 
 export type { NotifyOptions } from './notifyTypes';

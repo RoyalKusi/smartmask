@@ -16,8 +16,20 @@ export interface TableAlt {
 
 /** Chart wrapper: labelled figure, description for assistive tech, and a data-table alternative. */
 export function ChartFrame({
-  title, description, children, table, actions, height = 260,
-}: { title: string; description: string; children: ReactNode; table: TableAlt; actions?: ReactNode; height?: number }) {
+  title,
+  description,
+  children,
+  table,
+  actions,
+  height = 260,
+}: {
+  title: string;
+  description: string;
+  children: ReactNode;
+  table: TableAlt;
+  actions?: ReactNode;
+  height?: number;
+}) {
   const [asTable, setAsTable] = useState(false);
   return (
     <figure className="sm-card" style={{ margin: 0 }} aria-label={title}>
@@ -42,11 +54,23 @@ export function ChartFrame({
           <table className="sm-matrix">
             <caption className="sm-visually-hidden">{title}</caption>
             <thead>
-              <tr>{table.columns.map((c) => <th key={c} scope="col">{c}</th>)}</tr>
+              <tr>
+                {table.columns.map((c) => (
+                  <th key={c} scope="col">
+                    {c}
+                  </th>
+                ))}
+              </tr>
             </thead>
             <tbody>
               {table.rows.map((r, i) => (
-                <tr key={i}>{r.map((v, j) => <td key={j} className="sm-num">{v}</td>)}</tr>
+                <tr key={i}>
+                  {r.map((v, j) => (
+                    <td key={j} className="sm-num">
+                      {v}
+                    </td>
+                  ))}
+                </tr>
               ))}
             </tbody>
           </table>

@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { sha256Hex, sha256HexSync } from '../../src/shared/engine/hash';
-import { TokenVault, applyMask, bucket, partialEmail, partialKeep, redact } from '../../src/shared/engine/masking';
+import {
+  TokenVault,
+  applyMask,
+  bucket,
+  partialEmail,
+  partialKeep,
+  redact,
+} from '../../src/shared/engine/masking';
 
 describe('masking functions', () => {
   it('PARTIAL_KEEP keeps first/last alphanumerics and preserves separators', () => {
@@ -21,6 +28,8 @@ describe('masking functions', () => {
   it('BUCKET uses width 50,000', () => {
     expect(bucket('128450.00', 50000)).toBe('100,000–149,999');
     expect(bucket(0, 50000)).toBe('0–49,999');
+    expect(bucket('', 50000)).toBe('');
+    expect(bucket(null, 50000)).toBeNull();
     expect(bucket(2_400_000, 50000)).toBe('2,400,000–2,449,999');
   });
 
@@ -43,7 +52,9 @@ describe('masking functions', () => {
   });
 
   it('fails closed when a token was not primed', () => {
-    expect(applyMask('HMAC_TOKEN', 'never-primed', {}, { tag: 'PII_HIGH', vault: new TokenVault('x') })).toBe('[REDACTED]');
+    expect(applyMask('HMAC_TOKEN', 'never-primed', {}, { tag: 'PII_HIGH', vault: new TokenVault('x') })).toBe(
+      '[REDACTED]',
+    );
   });
 });
 

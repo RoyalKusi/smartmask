@@ -85,6 +85,12 @@ export async function verifyChain(
 /** Corrupt one event in place of its stored copy without re-sealing it (the attacker has no key). */
 export function tamper(events: readonly AuditEvent[], index: number): AuditEvent[] {
   return events.map((e, i) =>
-    i === index ? { ...e, execution_time_ms: Math.round((e.execution_time_ms + 0.37) * 100) / 100, detail: `${e.detail} ` } : e,
+    i === index
+      ? {
+          ...e,
+          execution_time_ms: Math.round((e.execution_time_ms + 0.37) * 100) / 100,
+          detail: `${e.detail} `,
+        }
+      : e,
   );
 }
