@@ -1,6 +1,6 @@
 import { createRng } from '../engine/prng';
 import type { Role } from '../engine/types';
-import { DAY, DEMO_NOW, iso } from './pool';
+import { DAY, DEMO_NOW, iso } from './clock';
 
 export interface Principal {
   id: string;

@@ -10,8 +10,8 @@ export type TransitionTable<S extends string, E extends string> = Readonly<Recor
 export const LOAD_TRANSITIONS: TransitionTable<LoadState, LoadEvent> = {
   idle: { FETCH: 'loading', RESET: 'idle' },
   loading: { RESOLVE: 'success', RESOLVE_EMPTY: 'empty', REJECT: 'error', RESET: 'idle' },
-  success: { FETCH: 'loading', RESET: 'idle' },
-  empty: { FETCH: 'loading', RESET: 'idle' },
+  success: { FETCH: 'loading', RESOLVE_EMPTY: 'empty', RESET: 'idle' },
+  empty: { FETCH: 'loading', RESOLVE: 'success', RESET: 'idle' },
   error: { RETRY: 'retrying', FETCH: 'loading', RESET: 'idle' },
   retrying: { RESOLVE: 'success', RESOLVE_EMPTY: 'empty', REJECT: 'error', RESET: 'idle' },
 };

@@ -9,7 +9,8 @@ export type AuditEventType =
   | 'SCAN'
   | 'ALERT_ACTION'
   | 'BACKEND_ADDED'
-  | 'EXPORT';
+  | 'EXPORT'
+  | 'SCHEMA_DRIFT';
 
 export interface AuditBody {
   id: number;

@@ -1,5 +1,5 @@
 import { EngineError, type ColumnState, type Dialect, type Family, type Role, type Tag, type Violation } from '../types';
-import { resolveMask, type Policy } from '../policy';
+import { resolveMask, type Policy } from '../policyCore';
 import type { MaskArgs, MaskFn } from '../masking';
 import type { Expr, Join, Query, QueryBody, Select, SelectItem, TableRef } from './ast';
 

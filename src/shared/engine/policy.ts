@@ -1,64 +1,13 @@
 import { LineCounter, isMap, isScalar, isSeq, parseDocument, type Document, type Node, type YAMLMap } from 'yaml';
-import { MASK_FNS, DEFAULT_BUCKET_WIDTH, partialProfile, type MaskArgs, type MaskFn } from './masking';
+import { MASK_FNS, DEFAULT_BUCKET_WIDTH, type MaskFn } from './masking';
+import { DEFAULT_POLICY_YAML } from './defaultPolicy';
+import type { Policy, PolicyIssue, PolicyRule } from './policyCore';
+import { resolveMask, ruleMatrix, withVersion } from './policyCore';
 import { ROLES, TAGS, type Family, type Role, type Tag } from './types';
 
-export interface PolicyRule {
-  role: Role;
-  tag: Tag | '*';
-  family?: Family;
-  function: MaskFn;
-  width?: number;
-  keep_first?: number;
-  keep_last?: number;
-  line: number;
-}
-
-export interface Policy {
-  version: number;
-  rules: PolicyRule[];
-}
-
-export interface PolicyIssue {
-  code: string;
-  message: string;
-  severity: 'error' | 'warning';
-  line: number;
-  col: number;
-  endCol: number;
-}
-
-export const DEFAULT_POLICY_YAML = `# SmartMask masking policy.
-# Roles x tags -> masking function. Save publishes a new policy_version.
-policy_version: 7
-fail_mode: closed
-rules:
-  - role: ROLE_ADMIN
-    tag: "*"
-    function: PLAINTEXT
-  - role: ROLE_SUPPORT
-    tag: PII_HIGH
-    function: PARTIAL_KEEP
-  - role: ROLE_SUPPORT
-    tag: FINANCIAL_CONFIDENTIAL
-    function: BUCKET
-    width: 50000
-  - role: ROLE_SUPPORT
-    tag: PII_MEDIUM
-    function: PARTIAL_KEEP
-  - role: ROLE_SUPPORT
-    tag: PII_MEDIUM
-    family: EMAIL
-    function: PARTIAL_EMAIL
-  - role: ROLE_ANALYST
-    tag: PII_HIGH
-    function: HMAC_TOKEN
-  - role: ROLE_ANALYST
-    tag: FINANCIAL_CONFIDENTIAL
-    function: REDACT
-  - role: ROLE_ANALYST
-    tag: PII_MEDIUM
-    function: REDACT
-`;
+export { resolveMask, ruleMatrix, withVersion, DEFAULT_POLICY_YAML };
+export type { Policy, PolicyIssue, PolicyRule };
+export type { MatrixCell, ResolvedMask } from './policyCore';
 
 const FAMILIES: readonly string[] = [
   'PAN', 'SSN', 'AADHAAR', 'IBAN', 'ACCOUNT_NO', 'EMAIL', 'PHONE', 'PERSON_NAME', 'DOB', 'ADDRESS',
@@ -86,7 +35,7 @@ function locate(lc: LineCounter, node: Node | null | undefined, fallbackLine = 1
 
 export function parsePolicy(text: string): ParsedPolicy {
   const lc = new LineCounter();
-  const doc = parseDocument(text, { lineCounter: lc, prettyErrors: false });
+  const doc = parseDocument(text, { lineCounter: lc, prettyErrors: true });
   const issues: PolicyIssue[] = [];
   for (const e of doc.errors) {
     const p = e.linePos?.[0];
@@ -208,67 +157,6 @@ export function parsePolicy(text: string): ParsedPolicy {
   return { policy: { version, rules }, issues };
 }
 
-export interface ResolvedMask {
-  fn: MaskFn;
-  args: MaskArgs;
-  rule: PolicyRule | null;
-}
-
-/** Most specific rule wins: family-specific beats generic, explicit tag beats "*". No rule fails closed. */
-export function resolveMask(policy: Policy, role: Role, tag: Tag, family?: Family): ResolvedMask {
-  let best: PolicyRule | null = null;
-  let bestScore = -1;
-  for (const r of policy.rules) {
-    if (r.role !== role) continue;
-    if (r.tag !== '*' && r.tag !== tag) continue;
-    if (r.family && r.family !== family) continue;
-    const score = (r.family ? 2 : 0) + (r.tag !== '*' ? 1 : 0);
-    if (score > bestScore) {
-      best = r;
-      bestScore = score;
-    }
-  }
-  if (!best) return { fn: role === 'ROLE_ADMIN' ? 'PLAINTEXT' : 'REDACT', args: {}, rule: null };
-  const args: MaskArgs = {};
-  if (best.function === 'BUCKET') args.width = best.width ?? DEFAULT_BUCKET_WIDTH;
-  if (best.keep_first !== undefined) args.keep_first = best.keep_first;
-  if (best.keep_last !== undefined) args.keep_last = best.keep_last;
-  if (best.function === 'PARTIAL_KEEP' && args.keep_first === undefined && args.keep_last === undefined) {
-    const p = partialProfile(family);
-    args.keep_first = p.first;
-    args.keep_last = p.last;
-  }
-  return { fn: best.function, args, rule: best };
-}
-
-export interface MatrixCell {
-  fn: MaskFn;
-  extras: { family: Family; fn: MaskFn }[];
-}
-
-export function ruleMatrix(policy: Policy): Record<Role, Record<Tag, MatrixCell>> {
-  const out = {} as Record<Role, Record<Tag, MatrixCell>>;
-  for (const r of ROLES) {
-    out[r] = {} as Record<Tag, MatrixCell>;
-    for (const t of TAGS) {
-      const main = resolveMask(policy, r, t);
-      out[r][t] = {
-        fn: main.fn,
-        extras: policy.rules
-          .filter((x) => x.role === r && x.family && (x.tag === t || x.tag === '*'))
-          .map((x) => ({ family: x.family as Family, fn: x.function })),
-      };
-    }
-  }
-  return out;
-}
-
-export function withVersion(text: string, version: number): string {
-  return /^policy_version:.*$/m.test(text)
-    ? text.replace(/^policy_version:.*$/m, `policy_version: ${version}`)
-    : `policy_version: ${version}\n${text}`;
-}
-
 export interface CopilotChange {
   role: Role;
   tag: Tag;
@@ -288,10 +176,12 @@ const ROLE_WORDS: [Role, RegExp][] = [
 
 function parseTargets(req: string): { tag: Tag; family?: Family }[] {
   const out: { tag: Tag; family?: Family }[] = [];
-  if (/e-?mail/i.test(req)) out.push({ tag: 'PII_MEDIUM', family: 'EMAIL' });
+  // "email addresses" is one thing (the EMAIL family), not an email plus a postal address.
+  const rest = req.replace(/e-?mail(\s+address(es)?)?/gi, ' ');
+  if (rest !== req) out.push({ tag: 'PII_MEDIUM', family: 'EMAIL' });
   if (/card|\bpan\b|ssn|aadhaar|iban|account number|pii[_ ]?high|high[- ]risk|identifier/i.test(req)) out.push({ tag: 'PII_HIGH' });
   if (/balance|financial|salary|income|amount|loan|money/i.test(req)) out.push({ tag: 'FINANCIAL_CONFIDENTIAL' });
-  if (/pii[_ ]?medium|medium|\bnames?\b|phone|address|contact|birth|dob/i.test(req)) out.push({ tag: 'PII_MEDIUM' });
+  if (/pii[_ ]?medium|medium|\bnames?\b|phone|address|contact|birth|dob/i.test(rest)) out.push({ tag: 'PII_MEDIUM' });
   return out;
 }
 
@@ -352,4 +242,9 @@ export function copilotDraft(request: string, currentText: string): CopilotResul
     .map((c) => `${c.role} · ${c.tag}${c.family ? ` (${c.family})` : ''} → ${c.fn}`)
     .join('; ');
   return { kind: 'ok', summary, changes, text };
+}
+
+/** Pure, synchronous validation used by the editor on every keystroke. */
+export function validatePolicy(text: string): ParsedPolicy {
+  return parsePolicy(text);
 }

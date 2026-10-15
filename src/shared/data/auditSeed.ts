@@ -1,6 +1,6 @@
 import { sealEvent, GENESIS_HASH, type AuditBody, type AuditEvent } from '../engine/audit';
 import { sha256HexSync } from '../engine/hash';
-import type { Policy } from '../engine/policy';
+import type { Policy } from '../engine/policyCore';
 import { simulateStages } from '../engine/pipeline';
 import { createRng, type Rng } from '../engine/prng';
 import { analyzeQuery, type AnalyzeEnv } from '../engine/sql/analyze';

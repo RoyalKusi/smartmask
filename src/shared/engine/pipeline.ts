@@ -7,7 +7,7 @@ import { formatQuery } from './sql/format';
 import { parseSql } from './sql/parser';
 import type { Query } from './sql/ast';
 import type { Dialect } from './types';
-import type { Policy } from './policy';
+import type { Policy } from './policyCore';
 
 export const DISPLAY_ROW_CAP = 500;
 export const STAGE_BUDGET_MS = 4.0;
