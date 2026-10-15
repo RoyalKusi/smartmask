@@ -84,8 +84,10 @@ simulated by design.
 
 ## Measured numbers (this machine, headless Chromium, local server)
 
-* Unit and property tests: see `npm test` output.
-* End-to-end: 16 flow tests, axe-core on 9 views × 2 themes plus overlays, responsive and keyboard tests, 18 visual snapshots.
+* Unit and property tests: 87 passed.
+* Playwright: 79 passed (6.8 min).
+* Overview route: 326.6 KB gzip total, 166 KB initial graph (`npm run size`).
+* End-to-end: 17 flow tests, axe-core on 9 views × 2 themes plus overlays, responsive and keyboard tests, 18 visual snapshots.
 * JavaScript for the Overview route (`npm run size`): see the "Bundle" section below.
 * First contentful paint: ≈ 0.25–0.4 s headless (software rendering, local server). This is not a field measurement.
 

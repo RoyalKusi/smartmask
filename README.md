@@ -18,8 +18,8 @@ npm install
 npm run dev          # http://localhost:5173
 npm run build        # type-check + production build
 npm run preview      # serve the build on :4173
-npm test             # 90+ unit and property tests (Vitest)
-npm run e2e          # Playwright: flows, axe-core (light + dark), responsive, visual snapshots
+npm test             # 87 unit and property tests (Vitest)
+npm run e2e          # Playwright: 79 tests (flows, wizards, axe-core light + dark, responsive, keyboard, perf budgets, 18 visual snapshots)
 npm run lint         # ESLint, zero warnings allowed
 npm run typecheck    # strict TypeScript
 npm run size         # gzip size of the JavaScript a route actually loads (needs `npm run preview` running)
@@ -65,7 +65,7 @@ Press **Ctrl+K** for the command palette and **Ctrl+Shift+E** for the hidden Cha
    the break is pinpointed and later rows turn amber. Open Verification to see SHA-256 of all 22 base tables unchanged
    before and after each query batch.
 6. **Performance and Anomalies (30 s).** Waterfall, P50/P95/P99, budget gauge and the live cache chart (publish a policy
-   to watch the hit ratio dip and recover). Anomalies lists three injected incidents scored by a real Isolation Forest.
+   to watch the hit ratio dip and recover). Anomalies lists three injected incidents (plus a few low-confidence alerts) scored by a real Isolation Forest. Refresh the page to reset all demo state.
 
 ## Architecture
 
